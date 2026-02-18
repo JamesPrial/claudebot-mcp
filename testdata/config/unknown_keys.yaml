@@ -1,0 +1,11 @@
+server:
+  port: 4000
+  auth_token: "uk-token"
+
+totally_unknown_section:
+  foo: bar
+  baz: 42
+
+another_unknown:
+  nested:
+    deeply: true

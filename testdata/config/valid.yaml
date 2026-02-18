@@ -1,0 +1,24 @@
+server:
+  port: 9090
+  auth_token: "test-auth-token-123"
+
+discord:
+  token: "discord-bot-token-abc"
+  guild_id: "123456789"
+  cleanup_on_shutdown: true
+
+queue:
+  max_size: 500
+  poll_timeout_sec: 15
+
+safety:
+  destructive_tools:
+    - "discord_delete_message"
+    - "discord_ban_member"
+
+audit:
+  enabled: true
+  log_path: "/tmp/audit.log"
+
+logging:
+  level: "debug"

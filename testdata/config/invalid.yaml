@@ -1,0 +1,5 @@
+server:
+  port: [invalid yaml
+  this is not: valid: yaml: at: all
+    broken indentation
+  : missing key

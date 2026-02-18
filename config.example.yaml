@@ -1,0 +1,44 @@
+server:
+  port: 8080
+  # Bearer token required for MCP client connections.
+  # Leave empty to disable authentication (not recommended in production).
+  auth_token: "your-secret-token-here"
+
+discord:
+  # Discord bot token from https://discord.com/developers/applications
+  token: "Bot your-discord-bot-token-here"
+  # The Discord guild (server) ID this bot operates in.
+  guild_id: "123456789012345678"
+
+queue:
+  # Maximum number of messages to buffer in the internal queue.
+  max_size: 1000
+  # Seconds to wait when polling for a new message before returning empty.
+  poll_timeout_sec: 30
+
+safety:
+  channels:
+    # Only allow the bot to read/write in these channels (by ID or name glob).
+    # An empty allowlist permits all channels not in the denylist.
+    allowlist: []
+    #  - "general"
+    #  - "bot-*"
+    # Always block these channels regardless of allowlist.
+    denylist: []
+    #  - "admin-*"
+    #  - "mod-logs"
+
+  # Tools that require an explicit confirmation token before executing.
+  destructive_tools:
+    - discord_delete_message
+
+audit:
+  enabled: true
+  # Path to the NDJSON audit log file.
+  log_path: "audit.log"
+  # Maximum size in megabytes before the log is rotated (0 = no limit).
+  max_size_mb: 100
+
+logging:
+  # Log level: debug, info, warn, error
+  level: "info"

@@ -105,46 +105,61 @@ func main() {
 
 	tools.RegisterAll(mcpServer, registrations)
 
-	// 12. Build StreamableHTTPServer and wrap with auth middleware.
-	httpHandler := server.NewStreamableHTTPServer(mcpServer)
-	authMiddleware := auth.NewAuthMiddleware(cfg.Server.AuthToken)
-	wrappedHandler := authMiddleware(httpHandler)
-
-	addr := fmt.Sprintf(":%d", cfg.Server.Port)
-	httpSrv := &http.Server{
-		Addr:              addr,
-		Handler:           wrappedHandler,
-		ReadHeaderTimeout: 10 * time.Second,
-		IdleTimeout:       120 * time.Second,
-	}
-
-	// 13. Start HTTP server in goroutine.
-	go func() {
-		logger.Printf("listening on %s", addr)
-		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Fatalf("HTTP server error: %v", err)
+	// 12. Start in stdio or HTTP mode.
+	if useStdio() {
+		logger.Println("starting in stdio mode")
+		if err := server.ServeStdio(mcpServer, server.WithErrorLogger(logger)); err != nil {
+			logger.Printf("stdio server error: %v", err)
 		}
-	}()
+	} else {
+		httpHandler := server.NewStreamableHTTPServer(mcpServer)
+		authMiddleware := auth.NewAuthMiddleware(cfg.Server.AuthToken)
+		wrappedHandler := authMiddleware(httpHandler)
 
-	// 14. Wait for SIGINT or SIGTERM.
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
-	logger.Println("shutting down...")
+		addr := fmt.Sprintf(":%d", cfg.Server.Port)
+		httpSrv := &http.Server{
+			Addr:              addr,
+			Handler:           wrappedHandler,
+			ReadHeaderTimeout: 10 * time.Second,
+			IdleTimeout:       120 * time.Second,
+		}
 
-	// 15. Graceful shutdown: HTTP server (15s timeout), then Discord session.
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
+		go func() {
+			logger.Printf("listening on %s", addr)
+			if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				logger.Fatalf("HTTP server error: %v", err)
+			}
+		}()
 
-	if err := httpSrv.Shutdown(ctx); err != nil {
-		logger.Printf("HTTP shutdown error: %v", err)
+		stop := make(chan os.Signal, 1)
+		signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+		<-stop
+		logger.Println("shutting down...")
+
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+
+		if err := httpSrv.Shutdown(ctx); err != nil {
+			logger.Printf("HTTP shutdown error: %v", err)
+		}
 	}
 
+	// 13. Close Discord session.
 	if err := rawDG.Close(); err != nil {
 		logger.Printf("Discord close error: %v", err)
 	}
 
 	logger.Println("server stopped")
+}
+
+// useStdio returns true if the --stdio flag was passed on the command line.
+func useStdio() bool {
+	for _, arg := range os.Args[1:] {
+		if arg == "--stdio" {
+			return true
+		}
+	}
+	return false
 }
 
 // loadConfig attempts to read the config file from the path specified by

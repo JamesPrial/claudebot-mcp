@@ -4,7 +4,6 @@ package message
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -28,27 +27,6 @@ type MessageSummary struct {
 	Content        string    `json:"content"`
 	Timestamp      time.Time `json:"timestamp"`
 	ReplyTo        string    `json:"reply_to,omitempty"`
-}
-
-// resolveChannelParam resolves a channel parameter that may be a name or ID.
-// All-digit strings are treated as IDs, otherwise looked up via Resolver.
-// Strips leading "#" from names.
-func resolveChannelParam(r *resolve.Resolver, channel string) (string, error) {
-	channel = strings.TrimPrefix(channel, "#")
-
-	// All-digit strings are already IDs.
-	allDigits := len(channel) > 0
-	for _, c := range channel {
-		if c < '0' || c > '9' {
-			allDigits = false
-			break
-		}
-	}
-	if allDigits {
-		return channel, nil
-	}
-
-	return r.ChannelID(channel)
 }
 
 // MessageTools returns all tool registrations for Discord message operations.
@@ -111,7 +89,7 @@ func toolPollMessages(dg *discordgo.Session, q *queue.Queue, r *resolve.Resolver
 		// Resolve channel filter if provided.
 		var channelFilter string
 		if channel != "" {
-			resolved, err := resolveChannelParam(r, channel)
+			resolved, err := resolve.ResolveChannelParam(r, channel)
 			if err != nil {
 				tools.LogAudit(audit, toolName, params, "error: "+err.Error(), start)
 				return tools.ErrorResult(err.Error()), nil
@@ -161,7 +139,7 @@ func toolSendMessage(dg *discordgo.Session, r *resolve.Resolver, filter *safety.
 			"reply_to": replyTo,
 		}
 
-		channelID, err := resolveChannelParam(r, channel)
+		channelID, err := resolve.ResolveChannelParam(r, channel)
 		if err != nil {
 			tools.LogAudit(audit, toolName, params, "error: "+err.Error(), start)
 			return tools.ErrorResult(err.Error()), nil
@@ -229,7 +207,7 @@ func toolGetMessages(dg *discordgo.Session, r *resolve.Resolver, filter *safety.
 			"before":  before,
 		}
 
-		channelID, err := resolveChannelParam(r, channel)
+		channelID, err := resolve.ResolveChannelParam(r, channel)
 		if err != nil {
 			tools.LogAudit(audit, toolName, params, "error: "+err.Error(), start)
 			return tools.ErrorResult(err.Error()), nil
@@ -301,7 +279,7 @@ func toolEditMessage(dg *discordgo.Session, r *resolve.Resolver, filter *safety.
 			"content":    content,
 		}
 
-		channelID, err := resolveChannelParam(r, channel)
+		channelID, err := resolve.ResolveChannelParam(r, channel)
 		if err != nil {
 			tools.LogAudit(audit, toolName, params, "error: "+err.Error(), start)
 			return tools.ErrorResult(err.Error()), nil
@@ -353,7 +331,7 @@ func toolDeleteMessage(dg *discordgo.Session, r *resolve.Resolver, filter *safet
 			"message_id": messageID,
 		}
 
-		channelID, err := resolveChannelParam(r, channel)
+		channelID, err := resolve.ResolveChannelParam(r, channel)
 		if err != nil {
 			tools.LogAudit(audit, toolName, params, "error: "+err.Error(), start)
 			return tools.ErrorResult(err.Error()), nil

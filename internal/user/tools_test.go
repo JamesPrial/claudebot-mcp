@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/jamesprial/claudebot-mcp/internal/testutil"
-	"github.com/jamesprial/claudebot-mcp/internal/tools"
 	"github.com/jamesprial/claudebot-mcp/internal/user"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -53,7 +52,7 @@ func Test_GetUser_Valid(t *testing.T) {
 	t.Cleanup(md.Close)
 
 	regs := user.UserTools(md.Session, nil)
-	handler := findHandler(t, regs, "discord_get_user")
+	handler := testutil.FindHandler(t, regs, "discord_get_user")
 
 	req := testutil.NewCallToolRequest("discord_get_user", map[string]any{
 		"user_id": "user-123",
@@ -79,7 +78,7 @@ func Test_GetUser_MissingUserID(t *testing.T) {
 	t.Cleanup(md.Close)
 
 	regs := user.UserTools(md.Session, nil)
-	handler := findHandler(t, regs, "discord_get_user")
+	handler := testutil.FindHandler(t, regs, "discord_get_user")
 
 	req := testutil.NewCallToolRequest("discord_get_user", map[string]any{})
 
@@ -102,7 +101,7 @@ func Test_GetUser_JSONFormat(t *testing.T) {
 	t.Cleanup(md.Close)
 
 	regs := user.UserTools(md.Session, nil)
-	handler := findHandler(t, regs, "discord_get_user")
+	handler := testutil.FindHandler(t, regs, "discord_get_user")
 
 	req := testutil.NewCallToolRequest("discord_get_user", map[string]any{
 		"user_id": "user-456",
@@ -118,21 +117,6 @@ func Test_GetUser_JSONFormat(t *testing.T) {
 	if !strings.Contains(text, "{") || !strings.Contains(text, "}") {
 		t.Errorf("expected JSON-formatted result, got: %s", text)
 	}
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-func findHandler(t testing.TB, regs []tools.Registration, name string) server.ToolHandlerFunc {
-	t.Helper()
-	for _, reg := range regs {
-		if reg.Tool.Name == name {
-			return reg.Handler
-		}
-	}
-	t.Fatalf("tool %q not found in registrations", name)
-	return nil
 }
 
 // Compile-time type checks.

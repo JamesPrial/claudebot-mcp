@@ -19,6 +19,12 @@ type Session struct {
 	guildID  string
 	queue    *queue.Queue
 	resolver *resolve.Resolver
+	// filter applies channel filtering at the ingestion level, preventing
+	// messages from denied channels from entering the queue. When nil, all
+	// messages from the configured guild are enqueued. Currently,
+	// NewFromSession passes nil for this field; channel filtering is
+	// enforced at the tool handler level instead. The field is exercised
+	// by tests via the internal newFromSessionFull constructor.
 	filter   *safety.Filter
 	logger   *log.Logger
 }

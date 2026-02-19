@@ -4,7 +4,6 @@ package channel
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -22,26 +21,6 @@ type ChannelSummary struct {
 	Topic    string `json:"topic,omitempty"`
 	Category string `json:"category,omitempty"`
 	Position int    `json:"position"`
-}
-
-// resolveChannelParam resolves a channel parameter that may be a name or ID.
-// All-digit strings are treated as IDs, otherwise looked up via Resolver.
-// Strips leading "#" from names.
-func resolveChannelParam(r *resolve.Resolver, channel string) (string, error) {
-	channel = strings.TrimPrefix(channel, "#")
-
-	allDigits := len(channel) > 0
-	for _, c := range channel {
-		if c < '0' || c > '9' {
-			allDigits = false
-			break
-		}
-	}
-	if allDigits {
-		return channel, nil
-	}
-
-	return r.ChannelID(channel)
 }
 
 // ChannelTools returns all tool registrations for Discord channel operations.
@@ -120,7 +99,7 @@ func toolTyping(dg *discordgo.Session, r *resolve.Resolver, filter *safety.Filte
 		channel := req.GetString("channel", "")
 		params := map[string]any{"channel": channel}
 
-		channelID, err := resolveChannelParam(r, channel)
+		channelID, err := resolve.ResolveChannelParam(r, channel)
 		if err != nil {
 			tools.LogAudit(audit, toolName, params, "error: "+err.Error(), start)
 			return tools.ErrorResult(err.Error()), nil

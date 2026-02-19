@@ -22,7 +22,9 @@ type DiscordConfig struct {
 
 // QueueConfig controls the internal message queue behaviour.
 type QueueConfig struct {
-	MaxSize        int `yaml:"max_size"`
+	MaxSize int `yaml:"max_size"`
+	// PollTimeoutSec is loaded from config but currently unused at runtime.
+	// The poll timeout is specified per-request by the MCP client (default 30, max 300).
 	PollTimeoutSec int `yaml:"poll_timeout_sec"`
 }
 
@@ -34,15 +36,18 @@ type ChannelFilter struct {
 
 // SafetyConfig groups channel filters and destructive tool declarations.
 type SafetyConfig struct {
-	Channels         ChannelFilter `yaml:"channels"`
-	DestructiveTools []string      `yaml:"destructive_tools"`
+	Channels ChannelFilter `yaml:"channels"`
+	// DestructiveTools is loaded from config but currently unused at runtime.
+	// The destructive tool list is defined in message.DestructiveTools.
+	DestructiveTools []string `yaml:"destructive_tools"`
 }
 
 // AuditConfig controls audit logging behaviour.
 type AuditConfig struct {
-	Enabled   bool   `yaml:"enabled"`
-	LogPath   string `yaml:"log_path"`
-	MaxSizeMB int    `yaml:"max_size_mb"`
+	Enabled bool   `yaml:"enabled"`
+	LogPath string `yaml:"log_path"`
+	// MaxSizeMB is loaded from config but no log rotation is currently implemented.
+	MaxSizeMB int `yaml:"max_size_mb"`
 }
 
 // LoggingConfig controls structured log output.
@@ -83,22 +88,16 @@ func LoadConfig(path string) (*Config, error) {
 // Defaults:
 //   - Server.Port = 8080
 //   - Queue.MaxSize = 1000
-//   - Queue.PollTimeoutSec = 30
 //   - Audit.Enabled = true
 //   - Audit.LogPath = "audit.log"
 //   - Logging.Level = "info"
-//   - Safety.DestructiveTools = ["discord_delete_message"]
 func DefaultConfig() *Config {
 	return &Config{
 		Server: ServerConfig{
 			Port: 8080,
 		},
 		Queue: QueueConfig{
-			MaxSize:        1000,
-			PollTimeoutSec: 30,
-		},
-		Safety: SafetyConfig{
-			DestructiveTools: []string{"discord_delete_message"},
+			MaxSize: 1000,
 		},
 		Audit: AuditConfig{
 			Enabled: true,

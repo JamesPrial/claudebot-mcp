@@ -4,7 +4,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jamesprial/claudebot-mcp/internal/tools"
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 )
 
 // NewCallToolRequest constructs an mcp.CallToolRequest with the given tool name
@@ -51,6 +53,19 @@ func AssertTextNotContains(t *testing.T, result *mcp.CallToolResult, substr stri
 	if strings.Contains(text, substr) {
 		t.Errorf("result text = %q, should NOT contain %q", text, substr)
 	}
+}
+
+// FindHandler searches the given registrations for a tool with the specified
+// name and returns its handler. It fails the test if the tool is not found.
+func FindHandler(t testing.TB, regs []tools.Registration, name string) server.ToolHandlerFunc {
+	t.Helper()
+	for _, reg := range regs {
+		if reg.Tool.Name == name {
+			return reg.Handler
+		}
+	}
+	t.Fatalf("tool %q not found in registrations", name)
+	return nil
 }
 
 // AssertNotError asserts that the CallToolResult is not an error result.

@@ -1,4 +1,4 @@
-package message
+package resolve_test
 
 import (
 	"testing"
@@ -8,10 +8,10 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// resolveChannelParam (internal/unexported helper)
+// ResolveChannelParam (exported helper in resolve package)
 // ---------------------------------------------------------------------------
 
-func Test_resolveChannelParam_Cases(t *testing.T) {
+func Test_ResolveChannelParam_Cases(t *testing.T) {
 	t.Parallel()
 
 	md := testutil.NewMockDiscordSession(t)
@@ -71,13 +71,13 @@ func Test_resolveChannelParam_Cases(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			id, err := resolveChannelParam(r, tt.input)
+			id, err := resolve.ResolveChannelParam(r, tt.input)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("resolveChannelParam(%q) error = %v, wantErr %v", tt.input, err, tt.wantErr)
+				t.Errorf("ResolveChannelParam(%q) error = %v, wantErr %v", tt.input, err, tt.wantErr)
 				return
 			}
 			if !tt.wantErr && id != tt.wantID {
-				t.Errorf("resolveChannelParam(%q) = %q, want %q", tt.input, id, tt.wantID)
+				t.Errorf("ResolveChannelParam(%q) = %q, want %q", tt.input, id, tt.wantID)
 			}
 		})
 	}

@@ -7,7 +7,6 @@ import (
 
 	"github.com/jamesprial/claudebot-mcp/internal/guild"
 	"github.com/jamesprial/claudebot-mcp/internal/testutil"
-	"github.com/jamesprial/claudebot-mcp/internal/tools"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -53,7 +52,7 @@ func Test_GetGuild_Valid(t *testing.T) {
 	t.Cleanup(md.Close)
 
 	regs := guild.GuildTools(md.Session, "guild-1", nil)
-	handler := findHandler(t, regs, "discord_get_guild")
+	handler := testutil.FindHandler(t, regs, "discord_get_guild")
 
 	req := testutil.NewCallToolRequest("discord_get_guild", map[string]any{})
 
@@ -77,7 +76,7 @@ func Test_GetGuild_JSONFormat(t *testing.T) {
 	t.Cleanup(md.Close)
 
 	regs := guild.GuildTools(md.Session, "test-guild-id", nil)
-	handler := findHandler(t, regs, "discord_get_guild")
+	handler := testutil.FindHandler(t, regs, "discord_get_guild")
 
 	req := testutil.NewCallToolRequest("discord_get_guild", map[string]any{})
 
@@ -98,7 +97,7 @@ func Test_GetGuild_ContainsMemberCount(t *testing.T) {
 	t.Cleanup(md.Close)
 
 	regs := guild.GuildTools(md.Session, "test-guild-id", nil)
-	handler := findHandler(t, regs, "discord_get_guild")
+	handler := testutil.FindHandler(t, regs, "discord_get_guild")
 
 	req := testutil.NewCallToolRequest("discord_get_guild", map[string]any{})
 
@@ -112,21 +111,6 @@ func Test_GetGuild_ContainsMemberCount(t *testing.T) {
 	if !strings.Contains(text, "42") {
 		t.Errorf("expected result to contain member count '42', got: %s", text)
 	}
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-func findHandler(t testing.TB, regs []tools.Registration, name string) server.ToolHandlerFunc {
-	t.Helper()
-	for _, reg := range regs {
-		if reg.Tool.Name == name {
-			return reg.Handler
-		}
-	}
-	t.Fatalf("tool %q not found in registrations", name)
-	return nil
 }
 
 // Compile-time type checks.

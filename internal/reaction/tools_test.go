@@ -9,7 +9,6 @@ import (
 	"github.com/jamesprial/claudebot-mcp/internal/resolve"
 	"github.com/jamesprial/claudebot-mcp/internal/safety"
 	"github.com/jamesprial/claudebot-mcp/internal/testutil"
-	"github.com/jamesprial/claudebot-mcp/internal/tools"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -80,7 +79,7 @@ func Test_AddReaction_Valid(t *testing.T) {
 	filter := safety.NewFilter(nil, nil)
 
 	regs := reaction.ReactionTools(md.Session, r, filter, nil)
-	handler := findHandler(t, regs, "discord_add_reaction")
+	handler := testutil.FindHandler(t, regs, "discord_add_reaction")
 
 	req := testutil.NewCallToolRequest("discord_add_reaction", map[string]any{
 		"channel":    "123456789012345678",
@@ -112,7 +111,7 @@ func Test_AddReaction_DeniedChannel(t *testing.T) {
 	filter := safety.NewFilter(nil, []string{"general"})
 
 	regs := reaction.ReactionTools(md.Session, r, filter, nil)
-	handler := findHandler(t, regs, "discord_add_reaction")
+	handler := testutil.FindHandler(t, regs, "discord_add_reaction")
 
 	req := testutil.NewCallToolRequest("discord_add_reaction", map[string]any{
 		"channel":    "general",
@@ -144,7 +143,7 @@ func Test_RemoveReaction_Valid(t *testing.T) {
 	filter := safety.NewFilter(nil, nil)
 
 	regs := reaction.ReactionTools(md.Session, r, filter, nil)
-	handler := findHandler(t, regs, "discord_remove_reaction")
+	handler := testutil.FindHandler(t, regs, "discord_remove_reaction")
 
 	req := testutil.NewCallToolRequest("discord_remove_reaction", map[string]any{
 		"channel":    "123456789012345678",
@@ -162,21 +161,6 @@ func Test_RemoveReaction_Valid(t *testing.T) {
 	if strings.HasPrefix(lower, "error:") {
 		t.Errorf("expected success for remove_reaction, got: %s", text)
 	}
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-func findHandler(t testing.TB, regs []tools.Registration, name string) server.ToolHandlerFunc {
-	t.Helper()
-	for _, reg := range regs {
-		if reg.Tool.Name == name {
-			return reg.Handler
-		}
-	}
-	t.Fatalf("tool %q not found in registrations", name)
-	return nil
 }
 
 // Compile-time type checks.

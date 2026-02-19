@@ -9,7 +9,6 @@ import (
 	"github.com/jamesprial/claudebot-mcp/internal/resolve"
 	"github.com/jamesprial/claudebot-mcp/internal/safety"
 	"github.com/jamesprial/claudebot-mcp/internal/testutil"
-	"github.com/jamesprial/claudebot-mcp/internal/tools"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -80,7 +79,7 @@ func Test_GetChannels_Valid(t *testing.T) {
 	filter := safety.NewFilter(nil, nil)
 
 	regs := channel.ChannelTools(md.Session, r, "test-guild-id", filter, nil)
-	handler := findHandler(t, regs, "discord_get_channels")
+	handler := testutil.FindHandler(t, regs, "discord_get_channels")
 
 	req := testutil.NewCallToolRequest("discord_get_channels", map[string]any{})
 
@@ -107,7 +106,7 @@ func Test_GetChannels_JSONFormat(t *testing.T) {
 	filter := safety.NewFilter(nil, nil)
 
 	regs := channel.ChannelTools(md.Session, r, "test-guild-id", filter, nil)
-	handler := findHandler(t, regs, "discord_get_channels")
+	handler := testutil.FindHandler(t, regs, "discord_get_channels")
 
 	req := testutil.NewCallToolRequest("discord_get_channels", map[string]any{})
 
@@ -135,7 +134,7 @@ func Test_Typing_Valid(t *testing.T) {
 	filter := safety.NewFilter(nil, nil)
 
 	regs := channel.ChannelTools(md.Session, r, "test-guild-id", filter, nil)
-	handler := findHandler(t, regs, "discord_typing")
+	handler := testutil.FindHandler(t, regs, "discord_typing")
 
 	req := testutil.NewCallToolRequest("discord_typing", map[string]any{
 		"channel": "123456789012345678",
@@ -164,7 +163,7 @@ func Test_Typing_DeniedChannel(t *testing.T) {
 	filter := safety.NewFilter(nil, []string{"general"})
 
 	regs := channel.ChannelTools(md.Session, r, "test-guild-id", filter, nil)
-	handler := findHandler(t, regs, "discord_typing")
+	handler := testutil.FindHandler(t, regs, "discord_typing")
 
 	req := testutil.NewCallToolRequest("discord_typing", map[string]any{
 		"channel": "general",
@@ -180,21 +179,6 @@ func Test_Typing_DeniedChannel(t *testing.T) {
 	if !strings.Contains(lower, "not allowed") && !strings.Contains(lower, "denied") {
 		t.Errorf("expected channel denied error, got: %s", text)
 	}
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-func findHandler(t testing.TB, regs []tools.Registration, name string) server.ToolHandlerFunc {
-	t.Helper()
-	for _, reg := range regs {
-		if reg.Tool.Name == name {
-			return reg.Handler
-		}
-	}
-	t.Fatalf("tool %q not found in registrations", name)
-	return nil
 }
 
 // Compile-time type checks.

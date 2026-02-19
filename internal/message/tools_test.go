@@ -11,7 +11,6 @@ import (
 	"github.com/jamesprial/claudebot-mcp/internal/resolve"
 	"github.com/jamesprial/claudebot-mcp/internal/safety"
 	"github.com/jamesprial/claudebot-mcp/internal/testutil"
-	"github.com/jamesprial/claudebot-mcp/internal/tools"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -91,7 +90,7 @@ func Test_PollMessages_EmptyQueue_ShortTimeout(t *testing.T) {
 	confirm := safety.NewConfirmationTracker(nil)
 
 	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
-	handler := findHandler(t, regs, "discord_poll_messages")
+	handler := testutil.FindHandler(t, regs, "discord_poll_messages")
 
 	req := testutil.NewCallToolRequest("discord_poll_messages", map[string]any{
 		"timeout_seconds": float64(1),
@@ -132,7 +131,7 @@ func Test_PollMessages_QueueHasMessages(t *testing.T) {
 	})
 
 	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
-	handler := findHandler(t, regs, "discord_poll_messages")
+	handler := testutil.FindHandler(t, regs, "discord_poll_messages")
 
 	req := testutil.NewCallToolRequest("discord_poll_messages", map[string]any{
 		"timeout_seconds": float64(1),
@@ -162,7 +161,7 @@ func Test_PollMessages_TimeoutClamping(t *testing.T) {
 	confirm := safety.NewConfirmationTracker(nil)
 
 	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
-	handler := findHandler(t, regs, "discord_poll_messages")
+	handler := testutil.FindHandler(t, regs, "discord_poll_messages")
 
 	tests := []struct {
 		name           string
@@ -211,7 +210,7 @@ func Test_SendMessage_Valid(t *testing.T) {
 	confirm := safety.NewConfirmationTracker(nil)
 
 	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
-	handler := findHandler(t, regs, "discord_send_message")
+	handler := testutil.FindHandler(t, regs, "discord_send_message")
 
 	req := testutil.NewCallToolRequest("discord_send_message", map[string]any{
 		"channel": "123456789012345678",
@@ -243,7 +242,7 @@ func Test_SendMessage_DeniedChannel(t *testing.T) {
 	confirm := safety.NewConfirmationTracker(nil)
 
 	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
-	handler := findHandler(t, regs, "discord_send_message")
+	handler := testutil.FindHandler(t, regs, "discord_send_message")
 
 	req := testutil.NewCallToolRequest("discord_send_message", map[string]any{
 		"channel": "general",
@@ -272,7 +271,7 @@ func Test_SendMessage_WithReplyTo(t *testing.T) {
 	confirm := safety.NewConfirmationTracker(nil)
 
 	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
-	handler := findHandler(t, regs, "discord_send_message")
+	handler := testutil.FindHandler(t, regs, "discord_send_message")
 
 	req := testutil.NewCallToolRequest("discord_send_message", map[string]any{
 		"channel":  "123456789012345678",
@@ -306,7 +305,7 @@ func Test_GetMessages_Valid(t *testing.T) {
 	confirm := safety.NewConfirmationTracker(nil)
 
 	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
-	handler := findHandler(t, regs, "discord_get_messages")
+	handler := testutil.FindHandler(t, regs, "discord_get_messages")
 
 	req := testutil.NewCallToolRequest("discord_get_messages", map[string]any{
 		"channel": "123456789012345678",
@@ -336,7 +335,7 @@ func Test_GetMessages_DeniedChannel(t *testing.T) {
 	confirm := safety.NewConfirmationTracker(nil)
 
 	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
-	handler := findHandler(t, regs, "discord_get_messages")
+	handler := testutil.FindHandler(t, regs, "discord_get_messages")
 
 	req := testutil.NewCallToolRequest("discord_get_messages", map[string]any{
 		"channel": "general",
@@ -368,7 +367,7 @@ func Test_EditMessage_Valid(t *testing.T) {
 	confirm := safety.NewConfirmationTracker(nil)
 
 	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
-	handler := findHandler(t, regs, "discord_edit_message")
+	handler := testutil.FindHandler(t, regs, "discord_edit_message")
 
 	req := testutil.NewCallToolRequest("discord_edit_message", map[string]any{
 		"channel":    "123456789012345678",
@@ -403,7 +402,7 @@ func Test_DeleteMessage_NoConfirmationToken(t *testing.T) {
 	confirm := safety.NewConfirmationTracker([]string{"discord_delete_message"})
 
 	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
-	handler := findHandler(t, regs, "discord_delete_message")
+	handler := testutil.FindHandler(t, regs, "discord_delete_message")
 
 	req := testutil.NewCallToolRequest("discord_delete_message", map[string]any{
 		"channel":    "123456789012345678",
@@ -435,7 +434,7 @@ func Test_DeleteMessage_WithValidConfirmationToken(t *testing.T) {
 	confirm := safety.NewConfirmationTracker([]string{"discord_delete_message"})
 
 	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
-	handler := findHandler(t, regs, "discord_delete_message")
+	handler := testutil.FindHandler(t, regs, "discord_delete_message")
 
 	// First call: get the confirmation token.
 	req1 := testutil.NewCallToolRequest("discord_delete_message", map[string]any{
@@ -484,7 +483,7 @@ func Benchmark_PollMessages_EmptyQueue(b *testing.B) {
 	confirm := safety.NewConfirmationTracker(nil)
 
 	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
-	handler := findHandler(&testing.T{}, regs, "discord_poll_messages")
+	handler := testutil.FindHandler(&testing.T{}, regs, "discord_poll_messages")
 
 	req := testutil.NewCallToolRequest("discord_poll_messages", map[string]any{
 		"timeout_seconds": float64(1),
@@ -496,21 +495,6 @@ func Benchmark_PollMessages_EmptyQueue(b *testing.B) {
 		_, _ = handler(ctx, req)
 		cancel()
 	}
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-func findHandler(t testing.TB, regs []tools.Registration, name string) server.ToolHandlerFunc {
-	t.Helper()
-	for _, reg := range regs {
-		if reg.Tool.Name == name {
-			return reg.Handler
-		}
-	}
-	t.Fatalf("tool %q not found in registrations", name)
-	return nil
 }
 
 func extractConfirmationToken(t *testing.T, text string) string {

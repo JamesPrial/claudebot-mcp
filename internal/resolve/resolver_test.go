@@ -57,11 +57,20 @@ func newTestResolver(t *testing.T, guildID string, channels []*discordgo.Channel
 	if err != nil {
 		t.Fatalf("failed to create discordgo session: %v", err)
 	}
+	// Save original endpoint values before mutating so they can be restored.
+	origAPI := discordgo.EndpointAPI
+	origGuilds := discordgo.EndpointGuilds
+
 	// Override the API endpoint to point to our test server.
 	// discordgo uses session.EndPoint as the base URL.
 	// The typical pattern is to set the package-level EndPoint variable.
 	discordgo.EndpointAPI = server.URL + "/api/v9/"
 	discordgo.EndpointGuilds = discordgo.EndpointAPI + "guilds/"
+
+	t.Cleanup(func() {
+		discordgo.EndpointAPI = origAPI
+		discordgo.EndpointGuilds = origGuilds
+	})
 
 	return New(session, guildID)
 }
@@ -284,8 +293,18 @@ func Test_Refresh_MultipleCallsOverwriteCache(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create discordgo session: %v", err)
 	}
+
+	// Save original endpoint values before mutating so they can be restored.
+	origAPI := discordgo.EndpointAPI
+	origGuilds := discordgo.EndpointGuilds
+
 	discordgo.EndpointAPI = server.URL + "/api/v9/"
 	discordgo.EndpointGuilds = discordgo.EndpointAPI + "guilds/"
+
+	t.Cleanup(func() {
+		discordgo.EndpointAPI = origAPI
+		discordgo.EndpointGuilds = origGuilds
+	})
 
 	resolver := New(session, "guild-1")
 

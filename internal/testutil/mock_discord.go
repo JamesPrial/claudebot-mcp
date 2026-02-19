@@ -179,12 +179,27 @@ func NewMockDiscordSession(t *testing.T) *MockDiscord {
 
 	ts := httptest.NewServer(mux)
 
+	// Save original endpoint values before mutating so they can be restored.
+	origDiscord := discordgo.EndpointDiscord
+	origAPI := discordgo.EndpointAPI
+	origGuilds := discordgo.EndpointGuilds
+	origChannels := discordgo.EndpointChannels
+	origUsers := discordgo.EndpointUsers
+
 	// Override discordgo's endpoint variables so the session talks to our mock.
 	discordgo.EndpointDiscord = ts.URL + "/"
 	discordgo.EndpointAPI = discordgo.EndpointDiscord + "api/v" + discordgo.APIVersion + "/"
 	discordgo.EndpointGuilds = discordgo.EndpointAPI + "guilds/"
 	discordgo.EndpointChannels = discordgo.EndpointAPI + "channels/"
 	discordgo.EndpointUsers = discordgo.EndpointAPI + "users/"
+
+	t.Cleanup(func() {
+		discordgo.EndpointDiscord = origDiscord
+		discordgo.EndpointAPI = origAPI
+		discordgo.EndpointGuilds = origGuilds
+		discordgo.EndpointChannels = origChannels
+		discordgo.EndpointUsers = origUsers
+	})
 
 	dg, err := discordgo.New("Bot test-token")
 	if err != nil {

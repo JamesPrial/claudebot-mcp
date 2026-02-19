@@ -195,9 +195,9 @@ func Test_DefaultConfig_Fields(t *testing.T) {
 			want:  "Queue.MaxSize == 1000",
 		},
 		{
-			name:  "Queue.PollTimeoutSec is 30",
-			check: func(cfg *Config) bool { return cfg.Queue.PollTimeoutSec == 30 },
-			want:  "Queue.PollTimeoutSec == 30",
+			name:  "Queue.PollTimeoutSec is 0 (unused)",
+			check: func(cfg *Config) bool { return cfg.Queue.PollTimeoutSec == 0 },
+			want:  "Queue.PollTimeoutSec == 0",
 		},
 		{
 			name:  "Audit.Enabled is true",
@@ -237,16 +237,9 @@ func Test_DefaultConfig_SafetyDestructiveTools(t *testing.T) {
 	if cfg == nil {
 		t.Fatal("DefaultConfig() returned nil")
 	}
-	found := false
-	for _, tool := range cfg.Safety.DestructiveTools {
-		if tool == "discord_delete_message" {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Errorf("DefaultConfig().Safety.DestructiveTools should contain %q, got %v",
-			"discord_delete_message", cfg.Safety.DestructiveTools)
+	if cfg.Safety.DestructiveTools != nil {
+		t.Errorf("DefaultConfig().Safety.DestructiveTools should be nil, got %v",
+			cfg.Safety.DestructiveTools)
 	}
 }
 

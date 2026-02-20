@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Discord MCP (Model Context Protocol) server in Go that enables Claude AI to interact with Discord servers. Provides MCP tools for Discord operations (messaging, reactions, guild info) with safety features: channel filtering, confirmation tokens for destructive ops, and NDJSON audit logging.
+Discord MCP (Model Context Protocol) server in Go (1.24+) that enables Claude AI to interact with Discord servers. Provides MCP tools for Discord operations (messaging, reactions, guild info) with safety features: channel filtering, confirmation tokens for destructive ops, and NDJSON audit logging.
 
 ## Build & Test Commands
 
@@ -30,7 +30,7 @@ Discord WebSocket Gateway → Session → Queue (ring buffer) ──────
 
 **Entry point:** `cmd/claudebot-mcp/main.go` — startup sequence with graceful shutdown on SIGINT/SIGTERM. Supports `--stdio` flag for stdio transport (used by Claude Code plugins) or defaults to HTTP on port 8080.
 
-**Tool packages** (`internal/{message,reaction,channel,guild,user}/`): Each exports a factory (e.g. `MessageTools()`, `ReactionTools()`) returning `[]tools.Registration`. Tools are registered in `main.go` via `tools.RegisterAll()`.
+**Tool packages** (`internal/{message,reaction,channel,guild,user}/`): Each exports a factory (e.g. `MessageTools()`, `ReactionTools()`) accepting injected dependencies (discordgo session, resolver, filter, audit logger, `*slog.Logger`) and returning `[]tools.Registration`. Tools are registered in `main.go` via `tools.RegisterAll()`.
 
 **Core infrastructure** (`internal/`):
 - `discord/` — Wraps discordgo session, registers gateway event handlers, routes messages through queue and filter

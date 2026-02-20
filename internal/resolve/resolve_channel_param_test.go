@@ -14,14 +14,7 @@ import (
 func Test_ResolveChannelParam_Cases(t *testing.T) {
 	t.Parallel()
 
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
-
-	r := resolve.New(md.Session, "guild-1")
-	// Refresh to populate the cache from mock (returns general and random).
-	if err := r.Refresh(); err != nil {
-		t.Fatalf("Refresh failed: %v", err)
-	}
+	r := testutil.NewMockChannelResolver()
 
 	tests := []struct {
 		name    string

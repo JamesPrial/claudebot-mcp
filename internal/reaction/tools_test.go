@@ -6,11 +6,8 @@ import (
 	"testing"
 
 	"github.com/jamesprial/claudebot-mcp/internal/reaction"
-	"github.com/jamesprial/claudebot-mcp/internal/resolve"
 	"github.com/jamesprial/claudebot-mcp/internal/safety"
 	"github.com/jamesprial/claudebot-mcp/internal/testutil"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
 )
 
 // ---------------------------------------------------------------------------
@@ -18,53 +15,17 @@ import (
 // ---------------------------------------------------------------------------
 
 func Test_ReactionTools_Registration(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
-
-	r := resolve.New(md.Session, "guild-1")
+	t.Parallel()
+	client := &testutil.MockDiscordClient{}
+	r := testutil.NewMockChannelResolver()
 	filter := safety.NewFilter(nil, nil)
 
-	regs := reaction.ReactionTools(md.Session, r, filter, nil, nil)
+	regs := reaction.ReactionTools(client, r, filter, nil, nil)
 
-	if len(regs) != 2 {
-		t.Fatalf("ReactionTools() returned %d registrations, want 2", len(regs))
-	}
-
-	expectedNames := map[string]bool{
-		"discord_add_reaction":    false,
-		"discord_remove_reaction": false,
-	}
-
-	for _, reg := range regs {
-		name := reg.Tool.Name
-		if _, ok := expectedNames[name]; !ok {
-			t.Errorf("unexpected tool name %q", name)
-			continue
-		}
-		expectedNames[name] = true
-	}
-
-	for name, found := range expectedNames {
-		if !found {
-			t.Errorf("expected tool %q not found in registrations", name)
-		}
-	}
-}
-
-func Test_ReactionTools_HandlersNotNil(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
-
-	r := resolve.New(md.Session, "guild-1")
-	filter := safety.NewFilter(nil, nil)
-
-	regs := reaction.ReactionTools(md.Session, r, filter, nil, nil)
-
-	for _, reg := range regs {
-		if reg.Handler == nil {
-			t.Errorf("tool %q has nil handler", reg.Tool.Name)
-		}
-	}
+	testutil.AssertRegistrations(t, regs, []string{
+		"discord_add_reaction",
+		"discord_remove_reaction",
+	})
 }
 
 // ---------------------------------------------------------------------------
@@ -72,13 +33,12 @@ func Test_ReactionTools_HandlersNotNil(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func Test_AddReaction_Valid(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
-
-	r := resolve.New(md.Session, "guild-1")
+	t.Parallel()
+	client := &testutil.MockDiscordClient{}
+	r := testutil.NewMockChannelResolver()
 	filter := safety.NewFilter(nil, nil)
 
-	regs := reaction.ReactionTools(md.Session, r, filter, nil, nil)
+	regs := reaction.ReactionTools(client, r, filter, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_add_reaction")
 
 	req := testutil.NewCallToolRequest("discord_add_reaction", map[string]any{
@@ -101,16 +61,12 @@ func Test_AddReaction_Valid(t *testing.T) {
 }
 
 func Test_AddReaction_DeniedChannel(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
-
-	r := resolve.New(md.Session, "guild-1")
-	if err := r.Refresh(); err != nil {
-		t.Fatalf("Refresh failed: %v", err)
-	}
+	t.Parallel()
+	client := &testutil.MockDiscordClient{}
+	r := testutil.NewMockChannelResolver()
 	filter := safety.NewFilter(nil, []string{"general"})
 
-	regs := reaction.ReactionTools(md.Session, r, filter, nil, nil)
+	regs := reaction.ReactionTools(client, r, filter, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_add_reaction")
 
 	req := testutil.NewCallToolRequest("discord_add_reaction", map[string]any{
@@ -136,13 +92,12 @@ func Test_AddReaction_DeniedChannel(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func Test_RemoveReaction_Valid(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
-
-	r := resolve.New(md.Session, "guild-1")
+	t.Parallel()
+	client := &testutil.MockDiscordClient{}
+	r := testutil.NewMockChannelResolver()
 	filter := safety.NewFilter(nil, nil)
 
-	regs := reaction.ReactionTools(md.Session, r, filter, nil, nil)
+	regs := reaction.ReactionTools(client, r, filter, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_remove_reaction")
 
 	req := testutil.NewCallToolRequest("discord_remove_reaction", map[string]any{
@@ -162,9 +117,3 @@ func Test_RemoveReaction_Valid(t *testing.T) {
 		t.Errorf("expected success for remove_reaction, got: %s", text)
 	}
 }
-
-// Compile-time type checks.
-var (
-	_ mcp.CallToolRequest
-	_ server.ToolHandlerFunc
-)

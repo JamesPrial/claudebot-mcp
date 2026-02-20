@@ -55,10 +55,6 @@ func Test_LoadConfig_ValidYAML(t *testing.T) {
 	if cfg.Queue.MaxSize != 500 {
 		t.Errorf("Queue.MaxSize = %d, want 500", cfg.Queue.MaxSize)
 	}
-	if cfg.Queue.PollTimeoutSec != 15 {
-		t.Errorf("Queue.PollTimeoutSec = %d, want 15", cfg.Queue.PollTimeoutSec)
-	}
-
 	// Verify audit section
 	if !cfg.Audit.Enabled {
 		t.Error("Audit.Enabled = false, want true")
@@ -196,11 +192,6 @@ func Test_DefaultConfig_Fields(t *testing.T) {
 			want:  "Queue.MaxSize == 1000",
 		},
 		{
-			name:  "Queue.PollTimeoutSec is 0 (unused)",
-			check: func(cfg *Config) bool { return cfg.Queue.PollTimeoutSec == 0 },
-			want:  "Queue.PollTimeoutSec == 0",
-		},
-		{
 			name:  "Audit.Enabled is true",
 			check: func(cfg *Config) bool { return cfg.Audit.Enabled },
 			want:  "Audit.Enabled == true",
@@ -229,18 +220,6 @@ func Test_DefaultConfig_Fields(t *testing.T) {
 				t.Errorf("DefaultConfig() failed check: want %s", tt.want)
 			}
 		})
-	}
-}
-
-func Test_DefaultConfig_SafetyDestructiveTools(t *testing.T) {
-	t.Parallel()
-	cfg := DefaultConfig()
-	if cfg == nil {
-		t.Fatal("DefaultConfig() returned nil")
-	}
-	if cfg.Safety.DestructiveTools != nil {
-		t.Errorf("DefaultConfig().Safety.DestructiveTools should be nil, got %v",
-			cfg.Safety.DestructiveTools)
 	}
 }
 

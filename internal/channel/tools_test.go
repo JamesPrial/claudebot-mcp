@@ -6,11 +6,8 @@ import (
 	"testing"
 
 	"github.com/jamesprial/claudebot-mcp/internal/channel"
-	"github.com/jamesprial/claudebot-mcp/internal/resolve"
 	"github.com/jamesprial/claudebot-mcp/internal/safety"
 	"github.com/jamesprial/claudebot-mcp/internal/testutil"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
 )
 
 // ---------------------------------------------------------------------------
@@ -18,53 +15,17 @@ import (
 // ---------------------------------------------------------------------------
 
 func Test_ChannelTools_Registration(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
-
-	r := resolve.New(md.Session, "guild-1")
+	t.Parallel()
+	client := &testutil.MockDiscordClient{}
+	r := testutil.NewMockChannelResolver()
 	filter := safety.NewFilter(nil, nil)
 
-	regs := channel.ChannelTools(md.Session, r, "test-guild-id", filter, nil, nil)
+	regs := channel.ChannelTools(client, r, "test-guild-id", filter, nil, nil)
 
-	if len(regs) != 2 {
-		t.Fatalf("ChannelTools() returned %d registrations, want 2", len(regs))
-	}
-
-	expectedNames := map[string]bool{
-		"discord_get_channels": false,
-		"discord_typing":       false,
-	}
-
-	for _, reg := range regs {
-		name := reg.Tool.Name
-		if _, ok := expectedNames[name]; !ok {
-			t.Errorf("unexpected tool name %q", name)
-			continue
-		}
-		expectedNames[name] = true
-	}
-
-	for name, found := range expectedNames {
-		if !found {
-			t.Errorf("expected tool %q not found in registrations", name)
-		}
-	}
-}
-
-func Test_ChannelTools_HandlersNotNil(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
-
-	r := resolve.New(md.Session, "guild-1")
-	filter := safety.NewFilter(nil, nil)
-
-	regs := channel.ChannelTools(md.Session, r, "test-guild-id", filter, nil, nil)
-
-	for _, reg := range regs {
-		if reg.Handler == nil {
-			t.Errorf("tool %q has nil handler", reg.Tool.Name)
-		}
-	}
+	testutil.AssertRegistrations(t, regs, []string{
+		"discord_get_channels",
+		"discord_typing",
+	})
 }
 
 // ---------------------------------------------------------------------------
@@ -72,13 +33,12 @@ func Test_ChannelTools_HandlersNotNil(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func Test_GetChannels_Valid(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
-
-	r := resolve.New(md.Session, "guild-1")
+	t.Parallel()
+	client := &testutil.MockDiscordClient{}
+	r := testutil.NewMockChannelResolver()
 	filter := safety.NewFilter(nil, nil)
 
-	regs := channel.ChannelTools(md.Session, r, "test-guild-id", filter, nil, nil)
+	regs := channel.ChannelTools(client, r, "test-guild-id", filter, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_get_channels")
 
 	req := testutil.NewCallToolRequest("discord_get_channels", map[string]any{})
@@ -99,13 +59,12 @@ func Test_GetChannels_Valid(t *testing.T) {
 }
 
 func Test_GetChannels_JSONFormat(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
-
-	r := resolve.New(md.Session, "guild-1")
+	t.Parallel()
+	client := &testutil.MockDiscordClient{}
+	r := testutil.NewMockChannelResolver()
 	filter := safety.NewFilter(nil, nil)
 
-	regs := channel.ChannelTools(md.Session, r, "test-guild-id", filter, nil, nil)
+	regs := channel.ChannelTools(client, r, "test-guild-id", filter, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_get_channels")
 
 	req := testutil.NewCallToolRequest("discord_get_channels", map[string]any{})
@@ -127,13 +86,12 @@ func Test_GetChannels_JSONFormat(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func Test_Typing_Valid(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
-
-	r := resolve.New(md.Session, "guild-1")
+	t.Parallel()
+	client := &testutil.MockDiscordClient{}
+	r := testutil.NewMockChannelResolver()
 	filter := safety.NewFilter(nil, nil)
 
-	regs := channel.ChannelTools(md.Session, r, "test-guild-id", filter, nil, nil)
+	regs := channel.ChannelTools(client, r, "test-guild-id", filter, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_typing")
 
 	req := testutil.NewCallToolRequest("discord_typing", map[string]any{
@@ -153,16 +111,12 @@ func Test_Typing_Valid(t *testing.T) {
 }
 
 func Test_Typing_DeniedChannel(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
-
-	r := resolve.New(md.Session, "guild-1")
-	if err := r.Refresh(); err != nil {
-		t.Fatalf("Refresh failed: %v", err)
-	}
+	t.Parallel()
+	client := &testutil.MockDiscordClient{}
+	r := testutil.NewMockChannelResolver()
 	filter := safety.NewFilter(nil, []string{"general"})
 
-	regs := channel.ChannelTools(md.Session, r, "test-guild-id", filter, nil, nil)
+	regs := channel.ChannelTools(client, r, "test-guild-id", filter, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_typing")
 
 	req := testutil.NewCallToolRequest("discord_typing", map[string]any{
@@ -180,9 +134,3 @@ func Test_Typing_DeniedChannel(t *testing.T) {
 		t.Errorf("expected channel denied error, got: %s", text)
 	}
 }
-
-// Compile-time type checks.
-var (
-	_ mcp.CallToolRequest
-	_ server.ToolHandlerFunc
-)

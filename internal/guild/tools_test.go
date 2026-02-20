@@ -7,8 +7,6 @@ import (
 
 	"github.com/jamesprial/claudebot-mcp/internal/guild"
 	"github.com/jamesprial/claudebot-mcp/internal/testutil"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
 )
 
 // ---------------------------------------------------------------------------
@@ -16,31 +14,13 @@ import (
 // ---------------------------------------------------------------------------
 
 func Test_GuildTools_Registration(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
+	t.Parallel()
+	client := &testutil.MockDiscordClient{}
+	regs := guild.GuildTools(client, "test-guild-id", nil, nil)
 
-	regs := guild.GuildTools(md.Session, "test-guild-id", nil, nil)
-
-	if len(regs) != 1 {
-		t.Fatalf("GuildTools() returned %d registrations, want 1", len(regs))
-	}
-
-	if regs[0].Tool.Name != "discord_get_guild" {
-		t.Errorf("expected tool name 'discord_get_guild', got %q", regs[0].Tool.Name)
-	}
-}
-
-func Test_GuildTools_HandlerNotNil(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
-
-	regs := guild.GuildTools(md.Session, "test-guild-id", nil, nil)
-
-	for _, reg := range regs {
-		if reg.Handler == nil {
-			t.Errorf("tool %q has nil handler", reg.Tool.Name)
-		}
-	}
+	testutil.AssertRegistrations(t, regs, []string{
+		"discord_get_guild",
+	})
 }
 
 // ---------------------------------------------------------------------------
@@ -48,10 +28,9 @@ func Test_GuildTools_HandlerNotNil(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func Test_GetGuild_Valid(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
-
-	regs := guild.GuildTools(md.Session, "guild-1", nil, nil)
+	t.Parallel()
+	client := &testutil.MockDiscordClient{}
+	regs := guild.GuildTools(client, "guild-1", nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_get_guild")
 
 	req := testutil.NewCallToolRequest("discord_get_guild", map[string]any{})
@@ -72,10 +51,9 @@ func Test_GetGuild_Valid(t *testing.T) {
 }
 
 func Test_GetGuild_JSONFormat(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
-
-	regs := guild.GuildTools(md.Session, "test-guild-id", nil, nil)
+	t.Parallel()
+	client := &testutil.MockDiscordClient{}
+	regs := guild.GuildTools(client, "test-guild-id", nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_get_guild")
 
 	req := testutil.NewCallToolRequest("discord_get_guild", map[string]any{})
@@ -93,10 +71,9 @@ func Test_GetGuild_JSONFormat(t *testing.T) {
 }
 
 func Test_GetGuild_ContainsMemberCount(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
-
-	regs := guild.GuildTools(md.Session, "test-guild-id", nil, nil)
+	t.Parallel()
+	client := &testutil.MockDiscordClient{}
+	regs := guild.GuildTools(client, "test-guild-id", nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_get_guild")
 
 	req := testutil.NewCallToolRequest("discord_get_guild", map[string]any{})
@@ -112,9 +89,3 @@ func Test_GetGuild_ContainsMemberCount(t *testing.T) {
 		t.Errorf("expected result to contain member count '42', got: %s", text)
 	}
 }
-
-// Compile-time type checks.
-var (
-	_ mcp.CallToolRequest
-	_ server.ToolHandlerFunc
-)

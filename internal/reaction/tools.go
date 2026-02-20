@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/bwmarrin/discordgo"
+	"github.com/jamesprial/claudebot-mcp/internal/discord"
 	"github.com/jamesprial/claudebot-mcp/internal/resolve"
 	"github.com/jamesprial/claudebot-mcp/internal/safety"
 	"github.com/jamesprial/claudebot-mcp/internal/tools"
@@ -17,22 +17,20 @@ import (
 
 // ReactionTools returns all tool registrations for Discord reaction operations.
 func ReactionTools(
-	dg *discordgo.Session,
-	r *resolve.Resolver,
+	dg discord.DiscordClient,
+	r resolve.ChannelResolver,
 	filter *safety.Filter,
 	audit *safety.AuditLogger,
 	logger *slog.Logger,
 ) []tools.Registration {
-	if logger == nil {
-		logger = slog.Default()
-	}
+	logger = tools.DefaultLogger(logger)
 	return []tools.Registration{
 		toolAddReaction(dg, r, filter, audit, logger),
 		toolRemoveReaction(dg, r, filter, audit, logger),
 	}
 }
 
-func toolAddReaction(dg *discordgo.Session, r *resolve.Resolver, filter *safety.Filter, audit *safety.AuditLogger, logger *slog.Logger) tools.Registration {
+func toolAddReaction(dg discord.DiscordClient, r resolve.ChannelResolver, filter *safety.Filter, audit *safety.AuditLogger, logger *slog.Logger) tools.Registration {
 	const toolName = "discord_add_reaction"
 
 	tool := mcp.NewTool(toolName,
@@ -62,23 +60,13 @@ func toolAddReaction(dg *discordgo.Session, r *resolve.Resolver, filter *safety.
 			"emoji":      emoji,
 		}
 
-		channelID, err := resolve.ResolveChannelParam(r, channel)
-		if err != nil {
-			tools.LogAudit(audit, toolName, params, "error: "+err.Error(), start)
-			return tools.ErrorResult(err.Error()), nil
-		}
-		logger.Debug("resolved channel", "input", channel, "channelID", channelID)
-
-		channelName := r.ChannelName(channelID)
-		if filter != nil && !filter.IsAllowed(channelName) {
-			logger.Debug("channel access denied", "channel", channelName)
-			tools.LogAudit(audit, toolName, params, "denied", start)
-			return tools.ErrorResult(fmt.Sprintf("access to channel %q is not allowed", channelName)), nil
+		channelID, _, errResult := tools.ResolveAndFilterChannel(r, filter, audit, logger, toolName, channel, params, start)
+		if errResult != nil {
+			return errResult, nil
 		}
 
 		if err := dg.MessageReactionAdd(channelID, messageID, emoji); err != nil {
-			tools.LogAudit(audit, toolName, params, "error: "+err.Error(), start)
-			return tools.ErrorResult(err.Error()), nil
+			return tools.AuditErrorResult(audit, toolName, params, err, start), nil
 		}
 
 		tools.LogAudit(audit, toolName, params, "ok", start)
@@ -88,7 +76,7 @@ func toolAddReaction(dg *discordgo.Session, r *resolve.Resolver, filter *safety.
 	return tools.Registration{Tool: tool, Handler: server.ToolHandlerFunc(handler)}
 }
 
-func toolRemoveReaction(dg *discordgo.Session, r *resolve.Resolver, filter *safety.Filter, audit *safety.AuditLogger, logger *slog.Logger) tools.Registration {
+func toolRemoveReaction(dg discord.DiscordClient, r resolve.ChannelResolver, filter *safety.Filter, audit *safety.AuditLogger, logger *slog.Logger) tools.Registration {
 	const toolName = "discord_remove_reaction"
 
 	tool := mcp.NewTool(toolName,
@@ -118,23 +106,13 @@ func toolRemoveReaction(dg *discordgo.Session, r *resolve.Resolver, filter *safe
 			"emoji":      emoji,
 		}
 
-		channelID, err := resolve.ResolveChannelParam(r, channel)
-		if err != nil {
-			tools.LogAudit(audit, toolName, params, "error: "+err.Error(), start)
-			return tools.ErrorResult(err.Error()), nil
-		}
-		logger.Debug("resolved channel", "input", channel, "channelID", channelID)
-
-		channelName := r.ChannelName(channelID)
-		if filter != nil && !filter.IsAllowed(channelName) {
-			logger.Debug("channel access denied", "channel", channelName)
-			tools.LogAudit(audit, toolName, params, "denied", start)
-			return tools.ErrorResult(fmt.Sprintf("access to channel %q is not allowed", channelName)), nil
+		channelID, _, errResult := tools.ResolveAndFilterChannel(r, filter, audit, logger, toolName, channel, params, start)
+		if errResult != nil {
+			return errResult, nil
 		}
 
 		if err := dg.MessageReactionRemove(channelID, messageID, emoji, "@me"); err != nil {
-			tools.LogAudit(audit, toolName, params, "error: "+err.Error(), start)
-			return tools.ErrorResult(err.Error()), nil
+			return tools.AuditErrorResult(audit, toolName, params, err, start), nil
 		}
 
 		tools.LogAudit(audit, toolName, params, "ok", start)

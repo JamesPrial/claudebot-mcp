@@ -97,7 +97,7 @@ func (r *Resolver) Refresh() error {
 // ResolveChannelParam resolves a channel parameter that may be a name or ID.
 // All-digit strings are treated as IDs, otherwise looked up via the Resolver.
 // A leading "#" is stripped from names.
-func ResolveChannelParam(r *Resolver, channel string) (string, error) {
+func ResolveChannelParam(r ChannelResolver, channel string) (string, error) {
 	channel = strings.TrimPrefix(channel, "#")
 
 	// All-digit strings are already IDs.

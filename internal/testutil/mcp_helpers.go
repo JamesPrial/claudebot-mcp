@@ -68,6 +68,35 @@ func FindHandler(t testing.TB, regs []tools.Registration, name string) server.To
 	return nil
 }
 
+// AssertRegistrations verifies that the given registrations exactly match
+// expectedNames: same count, each expected name present, and each handler non-nil.
+func AssertRegistrations(t *testing.T, regs []tools.Registration, expectedNames []string) {
+	t.Helper()
+	if len(regs) != len(expectedNames) {
+		t.Fatalf("got %d registrations, want %d", len(regs), len(expectedNames))
+	}
+	nameSet := make(map[string]bool, len(expectedNames))
+	for _, name := range expectedNames {
+		nameSet[name] = false
+	}
+	for _, reg := range regs {
+		name := reg.Tool.Name
+		if _, ok := nameSet[name]; !ok {
+			t.Errorf("unexpected registration: %q", name)
+			continue
+		}
+		nameSet[name] = true
+		if reg.Handler == nil {
+			t.Errorf("registration %q has nil handler", name)
+		}
+	}
+	for name, found := range nameSet {
+		if !found {
+			t.Errorf("expected registration %q not found", name)
+		}
+	}
+}
+
 // AssertNotError asserts that the CallToolResult is not an error result.
 func AssertNotError(t *testing.T, result *mcp.CallToolResult) {
 	t.Helper()

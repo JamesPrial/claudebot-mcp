@@ -13,8 +13,6 @@ discord:
 queue:
   # Maximum number of messages to buffer in the internal queue.
   max_size: 1000
-  # Seconds to wait when polling for a new message before returning empty.
-  poll_timeout_sec: 30
 
 safety:
   channels:
@@ -28,16 +26,10 @@ safety:
     #  - "admin-*"
     #  - "mod-logs"
 
-  # Tools that require an explicit confirmation token before executing.
-  destructive_tools:
-    - discord_delete_message
-
 audit:
   enabled: true
   # Path to the NDJSON audit log file.
   log_path: "audit.log"
-  # Maximum size in megabytes before the log is rotated (0 = no limit).
-  max_size_mb: 100
 
 logging:
   # Log level: debug, info, warn, error

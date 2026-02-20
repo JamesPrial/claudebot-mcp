@@ -7,8 +7,6 @@ import (
 
 	"github.com/jamesprial/claudebot-mcp/internal/testutil"
 	"github.com/jamesprial/claudebot-mcp/internal/user"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
 )
 
 // ---------------------------------------------------------------------------
@@ -16,31 +14,13 @@ import (
 // ---------------------------------------------------------------------------
 
 func Test_UserTools_Registration(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
+	t.Parallel()
+	client := &testutil.MockDiscordClient{}
+	regs := user.UserTools(client, nil, nil)
 
-	regs := user.UserTools(md.Session, nil, nil)
-
-	if len(regs) != 1 {
-		t.Fatalf("UserTools() returned %d registrations, want 1", len(regs))
-	}
-
-	if regs[0].Tool.Name != "discord_get_user" {
-		t.Errorf("expected tool name 'discord_get_user', got %q", regs[0].Tool.Name)
-	}
-}
-
-func Test_UserTools_HandlerNotNil(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
-
-	regs := user.UserTools(md.Session, nil, nil)
-
-	for _, reg := range regs {
-		if reg.Handler == nil {
-			t.Errorf("tool %q has nil handler", reg.Tool.Name)
-		}
-	}
+	testutil.AssertRegistrations(t, regs, []string{
+		"discord_get_user",
+	})
 }
 
 // ---------------------------------------------------------------------------
@@ -48,10 +28,9 @@ func Test_UserTools_HandlerNotNil(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func Test_GetUser_Valid(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
-
-	regs := user.UserTools(md.Session, nil, nil)
+	t.Parallel()
+	client := &testutil.MockDiscordClient{}
+	regs := user.UserTools(client, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_get_user")
 
 	req := testutil.NewCallToolRequest("discord_get_user", map[string]any{
@@ -74,10 +53,9 @@ func Test_GetUser_Valid(t *testing.T) {
 }
 
 func Test_GetUser_MissingUserID(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
-
-	regs := user.UserTools(md.Session, nil, nil)
+	t.Parallel()
+	client := &testutil.MockDiscordClient{}
+	regs := user.UserTools(client, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_get_user")
 
 	req := testutil.NewCallToolRequest("discord_get_user", map[string]any{})
@@ -97,10 +75,9 @@ func Test_GetUser_MissingUserID(t *testing.T) {
 }
 
 func Test_GetUser_JSONFormat(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
-
-	regs := user.UserTools(md.Session, nil, nil)
+	t.Parallel()
+	client := &testutil.MockDiscordClient{}
+	regs := user.UserTools(client, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_get_user")
 
 	req := testutil.NewCallToolRequest("discord_get_user", map[string]any{
@@ -118,9 +95,3 @@ func Test_GetUser_JSONFormat(t *testing.T) {
 		t.Errorf("expected JSON-formatted result, got: %s", text)
 	}
 }
-
-// Compile-time type checks.
-var (
-	_ mcp.CallToolRequest
-	_ server.ToolHandlerFunc
-)

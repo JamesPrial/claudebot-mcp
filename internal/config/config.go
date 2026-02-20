@@ -25,9 +25,6 @@ type DiscordConfig struct {
 // QueueConfig controls the internal message queue behaviour.
 type QueueConfig struct {
 	MaxSize int `yaml:"max_size"`
-	// PollTimeoutSec is loaded from config but currently unused at runtime.
-	// The poll timeout is specified per-request by the MCP client (default 30, max 300).
-	PollTimeoutSec int `yaml:"poll_timeout_sec"`
 }
 
 // ChannelFilter holds allowlist and denylist entries for Discord channel filtering.
@@ -39,17 +36,12 @@ type ChannelFilter struct {
 // SafetyConfig groups channel filters and destructive tool declarations.
 type SafetyConfig struct {
 	Channels ChannelFilter `yaml:"channels"`
-	// DestructiveTools is loaded from config but currently unused at runtime.
-	// The destructive tool list is defined in message.DestructiveTools.
-	DestructiveTools []string `yaml:"destructive_tools"`
 }
 
 // AuditConfig controls audit logging behaviour.
 type AuditConfig struct {
 	Enabled bool   `yaml:"enabled"`
 	LogPath string `yaml:"log_path"`
-	// MaxSizeMB is loaded from config but no log rotation is currently implemented.
-	MaxSizeMB int `yaml:"max_size_mb"`
 }
 
 // LoggingConfig controls structured log output.

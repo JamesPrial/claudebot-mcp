@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -29,7 +30,11 @@ import (
 
 const defaultConfigPath = "config.yaml"
 
+var stdioFlag = flag.Bool("stdio", false, "use stdio transport instead of HTTP")
+
 func main() {
+	flag.Parse()
+
 	// 1. Load config (before structured logger exists, uses stderr for errors).
 	cfg := loadConfig()
 
@@ -64,7 +69,7 @@ func main() {
 		cfg.Safety.Channels.Allowlist,
 		cfg.Safety.Channels.Denylist,
 	)
-	confirm := safety.NewConfirmationTracker(message.DestructiveTools)
+	confirm := safety.NewConfirmationTracker(message.DestructiveToolNames())
 
 	// 6. Build queue.
 	q := queue.New(queue.WithMaxSize(cfg.Queue.MaxSize))
@@ -126,7 +131,7 @@ func main() {
 	tools.RegisterAll(mcpServer, registrations)
 
 	// 13. Start in stdio or HTTP mode.
-	if useStdio() {
+	if *stdioFlag {
 		logger.Info("starting in stdio mode")
 		if err := server.ServeStdio(mcpServer, server.WithErrorLogger(stdLogger)); err != nil {
 			logger.Error("stdio server error", "error", err)
@@ -171,16 +176,6 @@ func main() {
 	}
 
 	logger.Info("server stopped")
-}
-
-// useStdio returns true if the --stdio flag was passed on the command line.
-func useStdio() bool {
-	for _, arg := range os.Args[1:] {
-		if arg == "--stdio" {
-			return true
-		}
-	}
-	return false
 }
 
 // loadConfig attempts to read the config file from the path specified by

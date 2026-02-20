@@ -9,12 +9,6 @@ discord:
 
 queue:
   max_size: 500
-  poll_timeout_sec: 15
-
-safety:
-  destructive_tools:
-    - "discord_delete_message"
-    - "discord_ban_member"
 
 audit:
   enabled: true

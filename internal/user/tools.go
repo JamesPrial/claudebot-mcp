@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/bwmarrin/discordgo"
+	"github.com/jamesprial/claudebot-mcp/internal/discord"
 	"github.com/jamesprial/claudebot-mcp/internal/safety"
 	"github.com/jamesprial/claudebot-mcp/internal/tools"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -24,19 +24,17 @@ type UserSummary struct {
 
 // UserTools returns all tool registrations for Discord user operations.
 func UserTools(
-	dg *discordgo.Session,
+	dg discord.DiscordClient,
 	audit *safety.AuditLogger,
 	logger *slog.Logger,
 ) []tools.Registration {
-	if logger == nil {
-		logger = slog.Default()
-	}
+	logger = tools.DefaultLogger(logger)
 	return []tools.Registration{
 		toolGetUser(dg, audit, logger),
 	}
 }
 
-func toolGetUser(dg *discordgo.Session, audit *safety.AuditLogger, logger *slog.Logger) tools.Registration {
+func toolGetUser(dg discord.DiscordClient, audit *safety.AuditLogger, logger *slog.Logger) tools.Registration {
 	const toolName = "discord_get_user"
 
 	tool := mcp.NewTool(toolName,
@@ -56,8 +54,7 @@ func toolGetUser(dg *discordgo.Session, audit *safety.AuditLogger, logger *slog.
 
 		u, err := dg.User(userID)
 		if err != nil {
-			tools.LogAudit(audit, toolName, params, "error: "+err.Error(), start)
-			return tools.ErrorResult(err.Error()), nil
+			return tools.AuditErrorResult(audit, toolName, params, err, start), nil
 		}
 
 		summary := UserSummary{

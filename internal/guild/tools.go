@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/bwmarrin/discordgo"
+	"github.com/jamesprial/claudebot-mcp/internal/discord"
 	"github.com/jamesprial/claudebot-mcp/internal/safety"
 	"github.com/jamesprial/claudebot-mcp/internal/tools"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -24,20 +24,18 @@ type GuildSummary struct {
 
 // GuildTools returns all tool registrations for Discord guild operations.
 func GuildTools(
-	dg *discordgo.Session,
+	dg discord.DiscordClient,
 	defaultGuildID string,
 	audit *safety.AuditLogger,
 	logger *slog.Logger,
 ) []tools.Registration {
-	if logger == nil {
-		logger = slog.Default()
-	}
+	logger = tools.DefaultLogger(logger)
 	return []tools.Registration{
 		toolGetGuild(dg, defaultGuildID, audit, logger),
 	}
 }
 
-func toolGetGuild(dg *discordgo.Session, defaultGuildID string, audit *safety.AuditLogger, logger *slog.Logger) tools.Registration {
+func toolGetGuild(dg discord.DiscordClient, defaultGuildID string, audit *safety.AuditLogger, logger *slog.Logger) tools.Registration {
 	const toolName = "discord_get_guild"
 
 	tool := mcp.NewTool(toolName,
@@ -59,8 +57,7 @@ func toolGetGuild(dg *discordgo.Session, defaultGuildID string, audit *safety.Au
 
 		g, err := dg.Guild(guildID)
 		if err != nil {
-			tools.LogAudit(audit, toolName, params, "error: "+err.Error(), start)
-			return tools.ErrorResult(err.Error()), nil
+			return tools.AuditErrorResult(audit, toolName, params, err, start), nil
 		}
 
 		summary := GuildSummary{

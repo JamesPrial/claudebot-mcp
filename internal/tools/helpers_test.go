@@ -1,6 +1,10 @@
 package tools
 
 import (
+	"bytes"
+	"errors"
+	"fmt"
+	"log/slog"
 	"strings"
 	"testing"
 	"time"
@@ -308,6 +312,213 @@ func Test_ConfirmPrompt_TokenIsConfirmable(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// DefaultLogger
+// ---------------------------------------------------------------------------
+
+func Test_DefaultLogger_Cases(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		input    *slog.Logger
+		wantNil  bool // if true, we expect slog.Default() (non-nil)
+		wantSame bool // if true, we expect the returned logger to be the same pointer as input
+	}{
+		{
+			name:     "nil input returns slog.Default",
+			input:    nil,
+			wantSame: false,
+		},
+		{
+			name:     "non-nil input returns same logger",
+			input:    slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)),
+			wantSame: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := DefaultLogger(tt.input)
+			if got == nil {
+				t.Fatal("DefaultLogger() returned nil, should always return non-nil")
+			}
+
+			if tt.wantSame {
+				if got != tt.input {
+					t.Error("DefaultLogger() with non-nil input should return the same logger pointer")
+				}
+			} else {
+				// nil input case: should return slog.Default()
+				if got != slog.Default() {
+					t.Error("DefaultLogger(nil) should return slog.Default()")
+				}
+			}
+		})
+	}
+}
+
+func Test_DefaultLogger_NilReturnsDefault(t *testing.T) {
+	t.Parallel()
+
+	result := DefaultLogger(nil)
+	if result == nil {
+		t.Fatal("DefaultLogger(nil) should never return nil")
+	}
+	if result != slog.Default() {
+		t.Error("DefaultLogger(nil) should return slog.Default()")
+	}
+}
+
+func Test_DefaultLogger_NonNilReturnsSame(t *testing.T) {
+	t.Parallel()
+
+	custom := slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil))
+	result := DefaultLogger(custom)
+	if result != custom {
+		t.Error("DefaultLogger(custom) should return the exact same logger instance")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// AuditErrorResult
+// ---------------------------------------------------------------------------
+
+func Test_AuditErrorResult_Cases(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		auditLogger  *safety.AuditLogger
+		toolName     string
+		params       map[string]any
+		err          error
+		wantContains string
+		wantAuditLog bool // whether we expect a write to the audit logger
+	}{
+		{
+			name:         "logs error and returns error result",
+			auditLogger:  safety.NewAuditLogger(&bytes.Buffer{}),
+			toolName:     "discord_send_message",
+			params:       map[string]any{"channel": "general"},
+			err:          errors.New("channel not found"),
+			wantContains: "error: channel not found",
+			wantAuditLog: true,
+		},
+		{
+			name:         "nil audit logger does not panic",
+			auditLogger:  nil,
+			toolName:     "discord_send_message",
+			params:       map[string]any{"channel": "general"},
+			err:          errors.New("some error"),
+			wantContains: "error: some error",
+			wantAuditLog: false,
+		},
+		{
+			name:         "empty params map",
+			auditLogger:  safety.NewAuditLogger(&bytes.Buffer{}),
+			toolName:     "discord_delete_message",
+			params:       map[string]any{},
+			err:          errors.New("missing message_id"),
+			wantContains: "error: missing message_id",
+			wantAuditLog: true,
+		},
+		{
+			name:         "nil params map",
+			auditLogger:  safety.NewAuditLogger(&bytes.Buffer{}),
+			toolName:     "discord_edit_message",
+			params:       nil,
+			err:          errors.New("bad request"),
+			wantContains: "error: bad request",
+			wantAuditLog: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Should not panic for any input combination.
+			defer func() {
+				if r := recover(); r != nil {
+					t.Errorf("AuditErrorResult panicked: %v", r)
+				}
+			}()
+
+			start := time.Now()
+			result := AuditErrorResult(tt.auditLogger, tt.toolName, tt.params, tt.err, start)
+
+			if result == nil {
+				t.Fatal("AuditErrorResult() returned nil, want non-nil")
+			}
+
+			text := extractText(t, result)
+			if !strings.Contains(text, tt.wantContains) {
+				t.Errorf("AuditErrorResult() text = %q, want it to contain %q", text, tt.wantContains)
+			}
+
+			// Verify it is marked as an error result.
+			if !result.IsError {
+				t.Error("AuditErrorResult() should produce a result with IsError=true")
+			}
+		})
+	}
+}
+
+func Test_AuditErrorResult_WritesToAuditLog(t *testing.T) {
+	t.Parallel()
+
+	w := &trackingWriter{}
+	auditLogger := safety.NewAuditLogger(w)
+
+	start := time.Now()
+	_ = AuditErrorResult(auditLogger, "discord_send_message", map[string]any{"channel": "general"}, errors.New("test error"), start)
+
+	if !w.called {
+		t.Error("AuditErrorResult should write to the audit logger")
+	}
+}
+
+func Test_AuditErrorResult_AuditEntryContainsError(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+	auditLogger := safety.NewAuditLogger(&buf)
+
+	start := time.Now()
+	_ = AuditErrorResult(auditLogger, "discord_send_message", map[string]any{"channel": "general"}, errors.New("permission denied"), start)
+
+	logged := buf.String()
+	if !strings.Contains(logged, "error: permission denied") {
+		t.Errorf("audit log entry should contain the error message, got: %s", logged)
+	}
+	if !strings.Contains(logged, "discord_send_message") {
+		t.Errorf("audit log entry should contain the tool name, got: %s", logged)
+	}
+}
+
+func Test_AuditErrorResult_NilAuditLoggerNoPanic(t *testing.T) {
+	t.Parallel()
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("AuditErrorResult with nil audit logger panicked: %v", r)
+		}
+	}()
+
+	result := AuditErrorResult(nil, "test_tool", map[string]any{"key": "val"}, errors.New("oops"), time.Now())
+	if result == nil {
+		t.Fatal("AuditErrorResult() should return non-nil even with nil audit logger")
+	}
+
+	text := extractText(t, result)
+	if !strings.Contains(text, "error: oops") {
+		t.Errorf("AuditErrorResult() text = %q, want it to contain %q", text, "error: oops")
+	}
+}
+
+// ---------------------------------------------------------------------------
 // Benchmarks
 // ---------------------------------------------------------------------------
 
@@ -327,5 +538,31 @@ func Benchmark_ErrorResult(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_ = ErrorResult("benchmark error")
+	}
+}
+
+func Benchmark_DefaultLogger_Nil(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = DefaultLogger(nil)
+	}
+}
+
+func Benchmark_DefaultLogger_NonNil(b *testing.B) {
+	l := slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = DefaultLogger(l)
+	}
+}
+
+func Benchmark_AuditErrorResult(b *testing.B) {
+	auditLogger := safety.NewAuditLogger(&bytes.Buffer{})
+	params := map[string]any{"channel": "general"}
+	err := fmt.Errorf("test error")
+	start := time.Now()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = AuditErrorResult(auditLogger, "discord_send_message", params, err, start)
 	}
 }

@@ -8,11 +8,8 @@ import (
 
 	"github.com/jamesprial/claudebot-mcp/internal/message"
 	"github.com/jamesprial/claudebot-mcp/internal/queue"
-	"github.com/jamesprial/claudebot-mcp/internal/resolve"
 	"github.com/jamesprial/claudebot-mcp/internal/safety"
 	"github.com/jamesprial/claudebot-mcp/internal/testutil"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
 )
 
 // ---------------------------------------------------------------------------
@@ -20,60 +17,23 @@ import (
 // ---------------------------------------------------------------------------
 
 func Test_MessageTools_Registration(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
+	t.Parallel()
 
+	client := &testutil.MockDiscordClient{}
 	q := queue.New()
-	r := resolve.New(md.Session, "guild-1")
+	r := testutil.NewMockChannelResolver()
 	filter := safety.NewFilter(nil, nil)
 	confirm := safety.NewConfirmationTracker([]string{"discord_delete_message"})
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
+	regs := message.MessageTools(client, q, r, filter, confirm, nil, nil)
 
-	if len(regs) != 5 {
-		t.Fatalf("MessageTools() returned %d registrations, want 5", len(regs))
-	}
-
-	expectedNames := map[string]bool{
-		"discord_poll_messages":  false,
-		"discord_send_message":   false,
-		"discord_get_messages":   false,
-		"discord_edit_message":   false,
-		"discord_delete_message": false,
-	}
-
-	for _, reg := range regs {
-		name := reg.Tool.Name
-		if _, ok := expectedNames[name]; !ok {
-			t.Errorf("unexpected tool name %q", name)
-			continue
-		}
-		expectedNames[name] = true
-	}
-
-	for name, found := range expectedNames {
-		if !found {
-			t.Errorf("expected tool %q not found in registrations", name)
-		}
-	}
-}
-
-func Test_MessageTools_HandlersNotNil(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
-
-	q := queue.New()
-	r := resolve.New(md.Session, "guild-1")
-	filter := safety.NewFilter(nil, nil)
-	confirm := safety.NewConfirmationTracker([]string{"discord_delete_message"})
-
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
-
-	for _, reg := range regs {
-		if reg.Handler == nil {
-			t.Errorf("tool %q has nil handler", reg.Tool.Name)
-		}
-	}
+	testutil.AssertRegistrations(t, regs, []string{
+		"discord_poll_messages",
+		"discord_send_message",
+		"discord_get_messages",
+		"discord_edit_message",
+		"discord_delete_message",
+	})
 }
 
 // ---------------------------------------------------------------------------
@@ -81,15 +41,15 @@ func Test_MessageTools_HandlersNotNil(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func Test_PollMessages_EmptyQueue_ShortTimeout(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
+	t.Parallel()
 
+	client := &testutil.MockDiscordClient{}
 	q := queue.New()
-	r := resolve.New(md.Session, "guild-1")
+	r := testutil.NewMockChannelResolver()
 	filter := safety.NewFilter(nil, nil)
 	confirm := safety.NewConfirmationTracker(nil)
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
+	regs := message.MessageTools(client, q, r, filter, confirm, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_poll_messages")
 
 	req := testutil.NewCallToolRequest("discord_poll_messages", map[string]any{
@@ -112,11 +72,11 @@ func Test_PollMessages_EmptyQueue_ShortTimeout(t *testing.T) {
 }
 
 func Test_PollMessages_QueueHasMessages(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
+	t.Parallel()
 
+	client := &testutil.MockDiscordClient{}
 	q := queue.New()
-	r := resolve.New(md.Session, "guild-1")
+	r := testutil.NewMockChannelResolver()
 	filter := safety.NewFilter(nil, nil)
 	confirm := safety.NewConfirmationTracker(nil)
 
@@ -130,7 +90,7 @@ func Test_PollMessages_QueueHasMessages(t *testing.T) {
 		Timestamp:      time.Now(),
 	})
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
+	regs := message.MessageTools(client, q, r, filter, confirm, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_poll_messages")
 
 	req := testutil.NewCallToolRequest("discord_poll_messages", map[string]any{
@@ -152,15 +112,15 @@ func Test_PollMessages_QueueHasMessages(t *testing.T) {
 }
 
 func Test_PollMessages_TimeoutClamping(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
+	t.Parallel()
 
+	client := &testutil.MockDiscordClient{}
 	q := queue.New()
-	r := resolve.New(md.Session, "guild-1")
+	r := testutil.NewMockChannelResolver()
 	filter := safety.NewFilter(nil, nil)
 	confirm := safety.NewConfirmationTracker(nil)
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
+	regs := message.MessageTools(client, q, r, filter, confirm, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_poll_messages")
 
 	tests := []struct {
@@ -201,15 +161,15 @@ func Test_PollMessages_TimeoutClamping(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func Test_SendMessage_Valid(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
+	t.Parallel()
 
+	client := &testutil.MockDiscordClient{}
 	q := queue.New()
-	r := resolve.New(md.Session, "guild-1")
+	r := testutil.NewMockChannelResolver()
 	filter := safety.NewFilter(nil, nil)
 	confirm := safety.NewConfirmationTracker(nil)
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
+	regs := message.MessageTools(client, q, r, filter, confirm, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_send_message")
 
 	req := testutil.NewCallToolRequest("discord_send_message", map[string]any{
@@ -230,18 +190,15 @@ func Test_SendMessage_Valid(t *testing.T) {
 }
 
 func Test_SendMessage_DeniedChannel(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
+	t.Parallel()
 
+	client := &testutil.MockDiscordClient{}
 	q := queue.New()
-	r := resolve.New(md.Session, "guild-1")
-	if err := r.Refresh(); err != nil {
-		t.Fatalf("Refresh failed: %v", err)
-	}
+	r := testutil.NewMockChannelResolver()
 	filter := safety.NewFilter(nil, []string{"general"})
 	confirm := safety.NewConfirmationTracker(nil)
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
+	regs := message.MessageTools(client, q, r, filter, confirm, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_send_message")
 
 	req := testutil.NewCallToolRequest("discord_send_message", map[string]any{
@@ -262,15 +219,15 @@ func Test_SendMessage_DeniedChannel(t *testing.T) {
 }
 
 func Test_SendMessage_WithReplyTo(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
+	t.Parallel()
 
+	client := &testutil.MockDiscordClient{}
 	q := queue.New()
-	r := resolve.New(md.Session, "guild-1")
+	r := testutil.NewMockChannelResolver()
 	filter := safety.NewFilter(nil, nil)
 	confirm := safety.NewConfirmationTracker(nil)
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
+	regs := message.MessageTools(client, q, r, filter, confirm, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_send_message")
 
 	req := testutil.NewCallToolRequest("discord_send_message", map[string]any{
@@ -296,15 +253,15 @@ func Test_SendMessage_WithReplyTo(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func Test_GetMessages_Valid(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
+	t.Parallel()
 
+	client := &testutil.MockDiscordClient{}
 	q := queue.New()
-	r := resolve.New(md.Session, "guild-1")
+	r := testutil.NewMockChannelResolver()
 	filter := safety.NewFilter(nil, nil)
 	confirm := safety.NewConfirmationTracker(nil)
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
+	regs := message.MessageTools(client, q, r, filter, confirm, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_get_messages")
 
 	req := testutil.NewCallToolRequest("discord_get_messages", map[string]any{
@@ -323,18 +280,15 @@ func Test_GetMessages_Valid(t *testing.T) {
 }
 
 func Test_GetMessages_DeniedChannel(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
+	t.Parallel()
 
+	client := &testutil.MockDiscordClient{}
 	q := queue.New()
-	r := resolve.New(md.Session, "guild-1")
-	if err := r.Refresh(); err != nil {
-		t.Fatalf("Refresh failed: %v", err)
-	}
+	r := testutil.NewMockChannelResolver()
 	filter := safety.NewFilter(nil, []string{"general"})
 	confirm := safety.NewConfirmationTracker(nil)
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
+	regs := message.MessageTools(client, q, r, filter, confirm, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_get_messages")
 
 	req := testutil.NewCallToolRequest("discord_get_messages", map[string]any{
@@ -358,15 +312,15 @@ func Test_GetMessages_DeniedChannel(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func Test_EditMessage_Valid(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
+	t.Parallel()
 
+	client := &testutil.MockDiscordClient{}
 	q := queue.New()
-	r := resolve.New(md.Session, "guild-1")
+	r := testutil.NewMockChannelResolver()
 	filter := safety.NewFilter(nil, nil)
 	confirm := safety.NewConfirmationTracker(nil)
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
+	regs := message.MessageTools(client, q, r, filter, confirm, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_edit_message")
 
 	req := testutil.NewCallToolRequest("discord_edit_message", map[string]any{
@@ -393,15 +347,15 @@ func Test_EditMessage_Valid(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func Test_DeleteMessage_NoConfirmationToken(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
+	t.Parallel()
 
+	client := &testutil.MockDiscordClient{}
 	q := queue.New()
-	r := resolve.New(md.Session, "guild-1")
+	r := testutil.NewMockChannelResolver()
 	filter := safety.NewFilter(nil, nil)
 	confirm := safety.NewConfirmationTracker([]string{"discord_delete_message"})
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
+	regs := message.MessageTools(client, q, r, filter, confirm, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_delete_message")
 
 	req := testutil.NewCallToolRequest("discord_delete_message", map[string]any{
@@ -425,15 +379,15 @@ func Test_DeleteMessage_NoConfirmationToken(t *testing.T) {
 }
 
 func Test_DeleteMessage_WithValidConfirmationToken(t *testing.T) {
-	md := testutil.NewMockDiscordSession(t)
-	t.Cleanup(md.Close)
+	t.Parallel()
 
+	client := &testutil.MockDiscordClient{}
 	q := queue.New()
-	r := resolve.New(md.Session, "guild-1")
+	r := testutil.NewMockChannelResolver()
 	filter := safety.NewFilter(nil, nil)
 	confirm := safety.NewConfirmationTracker([]string{"discord_delete_message"})
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
+	regs := message.MessageTools(client, q, r, filter, confirm, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_delete_message")
 
 	// First call: get the confirmation token.
@@ -474,15 +428,13 @@ func Test_DeleteMessage_WithValidConfirmationToken(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func Benchmark_PollMessages_EmptyQueue(b *testing.B) {
-	md := testutil.NewMockDiscordSession(&testing.T{})
-	defer md.Close()
-
+	client := &testutil.MockDiscordClient{}
 	q := queue.New()
-	r := resolve.New(md.Session, "guild-1")
+	r := testutil.NewMockChannelResolver()
 	filter := safety.NewFilter(nil, nil)
 	confirm := safety.NewConfirmationTracker(nil)
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
+	regs := message.MessageTools(client, q, r, filter, confirm, nil, nil)
 	handler := testutil.FindHandler(&testing.T{}, regs, "discord_poll_messages")
 
 	req := testutil.NewCallToolRequest("discord_poll_messages", map[string]any{
@@ -521,10 +473,3 @@ func extractConfirmationToken(t *testing.T, text string) string {
 	}
 	return after[:endIdx]
 }
-
-// Ensure imports are used. These variable declarations are a compile-time check
-// that the expected types are available.
-var (
-	_ mcp.CallToolRequest
-	_ server.ToolHandlerFunc
-)

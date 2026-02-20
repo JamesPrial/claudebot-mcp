@@ -73,6 +73,15 @@ func main() {
 	discordSession := discord.NewFromSession(rawDG, q, resolver)
 	_ = discordSession // event handlers registered; Close called on shutdown
 
+	// 8a. Set initial presence (online from first connect).
+	rawDG.Identify.Presence = discordgo.GatewayStatusUpdate{
+		Status: "online",
+		Game: discordgo.Activity{
+			Name: "the server",
+			Type: discordgo.ActivityTypeWatching,
+		},
+	}
+
 	// 9. Open Discord connection.
 	if err := rawDG.Open(); err != nil {
 		logger.Fatalf("failed to open Discord connection: %v", err)

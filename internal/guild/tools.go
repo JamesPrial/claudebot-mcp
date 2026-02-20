@@ -3,6 +3,7 @@ package guild
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -26,13 +27,17 @@ func GuildTools(
 	dg *discordgo.Session,
 	defaultGuildID string,
 	audit *safety.AuditLogger,
+	logger *slog.Logger,
 ) []tools.Registration {
+	if logger == nil {
+		logger = slog.Default()
+	}
 	return []tools.Registration{
-		toolGetGuild(dg, defaultGuildID, audit),
+		toolGetGuild(dg, defaultGuildID, audit, logger),
 	}
 }
 
-func toolGetGuild(dg *discordgo.Session, defaultGuildID string, audit *safety.AuditLogger) tools.Registration {
+func toolGetGuild(dg *discordgo.Session, defaultGuildID string, audit *safety.AuditLogger, logger *slog.Logger) tools.Registration {
 	const toolName = "discord_get_guild"
 
 	tool := mcp.NewTool(toolName,
@@ -49,6 +54,8 @@ func toolGetGuild(dg *discordgo.Session, defaultGuildID string, audit *safety.Au
 			guildID = defaultGuildID
 		}
 		params := map[string]any{"guild_id": guildID}
+
+		logger.Debug("fetching guild info", "guildID", guildID)
 
 		g, err := dg.Guild(guildID)
 		if err != nil {

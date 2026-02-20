@@ -3,8 +3,7 @@
 package discord
 
 import (
-	"log"
-	"os"
+	"log/slog"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/jamesprial/claudebot-mcp/internal/queue"
@@ -25,14 +24,14 @@ type Session struct {
 	// NewFromSession passes nil for this field; channel filtering is
 	// enforced at the tool handler level instead. The field is exercised
 	// by tests via the internal newFromSessionFull constructor.
-	filter   *safety.Filter
-	logger   *log.Logger
+	filter *safety.Filter
+	logger *slog.Logger
 }
 
 // NewFromSession wraps an existing *discordgo.Session, registering message and
 // ready event handlers and configuring the required gateway intents. The guild
 // ID is read from the resolver. A nil filter allows all channels; a nil logger
-// writes to stderr via the standard log package.
+// defaults to slog.Default().
 //
 // Intents enabled:
 //   - IntentGuilds
@@ -43,21 +42,23 @@ func NewFromSession(
 	dg *discordgo.Session,
 	q *queue.Queue,
 	r *resolve.Resolver,
+	logger *slog.Logger,
 ) *Session {
-	return newFromSessionFull(dg, q, r, nil, nil)
+	return newFromSessionFull(dg, q, r, nil, logger)
 }
 
 // newFromSessionFull is the internal constructor used by NewFromSession and by
-// callers that need to supply a custom filter and/or logger.
+// callers that need to supply a custom filter and/or logger. A nil logger
+// defaults to slog.Default().
 func newFromSessionFull(
 	dg *discordgo.Session,
 	q *queue.Queue,
 	r *resolve.Resolver,
 	filter *safety.Filter,
-	logger *log.Logger,
+	logger *slog.Logger,
 ) *Session {
 	if logger == nil {
-		logger = log.New(os.Stderr, "", log.LstdFlags)
+		logger = slog.Default()
 	}
 
 	s := &Session{
@@ -101,10 +102,12 @@ func (s *Session) DiscordSession() *discordgo.Session {
 // onReady is called when the Discord gateway confirms the bot is connected.
 // It logs the bot's username and triggers an initial channel cache refresh.
 func (s *Session) onReady(dg *discordgo.Session, event *discordgo.Ready) {
-	s.logger.Printf("discord: connected as %s#%s", event.User.Username, event.User.Discriminator)
-
+	s.logger.Info("discord connected",
+		"username", event.User.Username,
+		"discriminator", event.User.Discriminator,
+	)
 	if err := s.resolver.Refresh(); err != nil {
-		s.logger.Printf("discord: channel cache refresh failed: %v", err)
+		s.logger.Warn("channel cache refresh failed", "error", err)
 	}
 }
 
@@ -131,6 +134,7 @@ func (s *Session) onMessageCreate(dg *discordgo.Session, event *discordgo.Messag
 
 	// Apply channel filter using the resolved name.
 	if s.filter != nil && !s.filter.IsAllowed(channelName) {
+		s.logger.Debug("message filtered by channel deny", "channel", channelName, "author", event.Author.Username)
 		return
 	}
 
@@ -152,4 +156,5 @@ func (s *Session) onMessageCreate(dg *discordgo.Session, event *discordgo.Messag
 	}
 
 	s.queue.Enqueue(msg)
+	s.logger.Debug("message enqueued", "id", event.ID, "channel", channelName, "author", event.Author.Username)
 }

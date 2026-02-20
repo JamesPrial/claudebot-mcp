@@ -4,6 +4,7 @@ package channel
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -30,14 +31,18 @@ func ChannelTools(
 	defaultGuildID string,
 	filter *safety.Filter,
 	audit *safety.AuditLogger,
+	logger *slog.Logger,
 ) []tools.Registration {
+	if logger == nil {
+		logger = slog.Default()
+	}
 	return []tools.Registration{
-		toolGetChannels(dg, defaultGuildID, audit),
-		toolTyping(dg, r, filter, audit),
+		toolGetChannels(dg, defaultGuildID, audit, logger),
+		toolTyping(dg, r, filter, audit, logger),
 	}
 }
 
-func toolGetChannels(dg *discordgo.Session, defaultGuildID string, audit *safety.AuditLogger) tools.Registration {
+func toolGetChannels(dg *discordgo.Session, defaultGuildID string, audit *safety.AuditLogger, logger *slog.Logger) tools.Registration {
 	const toolName = "discord_get_channels"
 
 	tool := mcp.NewTool(toolName,
@@ -54,6 +59,8 @@ func toolGetChannels(dg *discordgo.Session, defaultGuildID string, audit *safety
 			guildID = defaultGuildID
 		}
 		params := map[string]any{"guild_id": guildID}
+
+		logger.Debug("listing channels", "guildID", guildID)
 
 		rawChannels, err := dg.GuildChannels(guildID)
 		if err != nil {
@@ -83,7 +90,7 @@ func toolGetChannels(dg *discordgo.Session, defaultGuildID string, audit *safety
 	return tools.Registration{Tool: tool, Handler: server.ToolHandlerFunc(handler)}
 }
 
-func toolTyping(dg *discordgo.Session, r *resolve.Resolver, filter *safety.Filter, audit *safety.AuditLogger) tools.Registration {
+func toolTyping(dg *discordgo.Session, r *resolve.Resolver, filter *safety.Filter, audit *safety.AuditLogger, logger *slog.Logger) tools.Registration {
 	const toolName = "discord_typing"
 
 	tool := mcp.NewTool(toolName,
@@ -110,6 +117,8 @@ func toolTyping(dg *discordgo.Session, r *resolve.Resolver, filter *safety.Filte
 			tools.LogAudit(audit, toolName, params, "denied", start)
 			return tools.ErrorResult(fmt.Sprintf("access to channel %q is not allowed", channelName)), nil
 		}
+
+		logger.Debug("sending typing indicator", "channelID", channelID)
 
 		if err := dg.ChannelTyping(channelID); err != nil {
 			tools.LogAudit(audit, toolName, params, "error: "+err.Error(), start)

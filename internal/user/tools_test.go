@@ -19,7 +19,7 @@ func Test_UserTools_Registration(t *testing.T) {
 	md := testutil.NewMockDiscordSession(t)
 	t.Cleanup(md.Close)
 
-	regs := user.UserTools(md.Session, nil)
+	regs := user.UserTools(md.Session, nil, nil)
 
 	if len(regs) != 1 {
 		t.Fatalf("UserTools() returned %d registrations, want 1", len(regs))
@@ -34,7 +34,7 @@ func Test_UserTools_HandlerNotNil(t *testing.T) {
 	md := testutil.NewMockDiscordSession(t)
 	t.Cleanup(md.Close)
 
-	regs := user.UserTools(md.Session, nil)
+	regs := user.UserTools(md.Session, nil, nil)
 
 	for _, reg := range regs {
 		if reg.Handler == nil {
@@ -51,7 +51,7 @@ func Test_GetUser_Valid(t *testing.T) {
 	md := testutil.NewMockDiscordSession(t)
 	t.Cleanup(md.Close)
 
-	regs := user.UserTools(md.Session, nil)
+	regs := user.UserTools(md.Session, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_get_user")
 
 	req := testutil.NewCallToolRequest("discord_get_user", map[string]any{
@@ -77,7 +77,7 @@ func Test_GetUser_MissingUserID(t *testing.T) {
 	md := testutil.NewMockDiscordSession(t)
 	t.Cleanup(md.Close)
 
-	regs := user.UserTools(md.Session, nil)
+	regs := user.UserTools(md.Session, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_get_user")
 
 	req := testutil.NewCallToolRequest("discord_get_user", map[string]any{})
@@ -100,7 +100,7 @@ func Test_GetUser_JSONFormat(t *testing.T) {
 	md := testutil.NewMockDiscordSession(t)
 	t.Cleanup(md.Close)
 
-	regs := user.UserTools(md.Session, nil)
+	regs := user.UserTools(md.Session, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_get_user")
 
 	req := testutil.NewCallToolRequest("discord_get_user", map[string]any{

@@ -75,7 +75,7 @@ func Test_NewAuthMiddleware_Cases(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			middleware := NewAuthMiddleware(tt.configToken)
+			middleware := NewAuthMiddleware(tt.configToken, nil)
 			handler := middleware(successHandler)
 
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -103,7 +103,7 @@ func Test_NewAuthMiddleware_PassesThroughToHandler(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	middleware := NewAuthMiddleware("my-token")
+	middleware := NewAuthMiddleware("my-token", nil)
 	handler := middleware(inner)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -127,7 +127,7 @@ func Test_NewAuthMiddleware_BlocksInnerHandler(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	middleware := NewAuthMiddleware("my-token")
+	middleware := NewAuthMiddleware("my-token", nil)
 	handler := middleware(inner)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)

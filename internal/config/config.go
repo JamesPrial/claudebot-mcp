@@ -3,7 +3,9 @@ package config
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -125,5 +127,26 @@ func ApplyEnvOverrides(cfg *Config) {
 	}
 	if authToken := os.Getenv("CLAUDEBOT_AUTH_TOKEN"); authToken != "" {
 		cfg.Server.AuthToken = authToken
+	}
+	if level := os.Getenv("CLAUDEBOT_LOG_LEVEL"); level != "" {
+		cfg.Logging.Level = level
+	}
+}
+
+// ParseLogLevel converts a logging level string to the corresponding slog.Level.
+// Recognized values (case-insensitive): "debug", "info", "warn"/"warning", "error".
+// Unrecognized values default to slog.LevelInfo.
+func ParseLogLevel(level string) slog.Level {
+	switch strings.ToLower(level) {
+	case "debug":
+		return slog.LevelDebug
+	case "info":
+		return slog.LevelInfo
+	case "warn", "warning":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
 	}
 }

@@ -24,7 +24,7 @@ func Test_ChannelTools_Registration(t *testing.T) {
 	r := resolve.New(md.Session, "guild-1")
 	filter := safety.NewFilter(nil, nil)
 
-	regs := channel.ChannelTools(md.Session, r, "test-guild-id", filter, nil)
+	regs := channel.ChannelTools(md.Session, r, "test-guild-id", filter, nil, nil)
 
 	if len(regs) != 2 {
 		t.Fatalf("ChannelTools() returned %d registrations, want 2", len(regs))
@@ -58,7 +58,7 @@ func Test_ChannelTools_HandlersNotNil(t *testing.T) {
 	r := resolve.New(md.Session, "guild-1")
 	filter := safety.NewFilter(nil, nil)
 
-	regs := channel.ChannelTools(md.Session, r, "test-guild-id", filter, nil)
+	regs := channel.ChannelTools(md.Session, r, "test-guild-id", filter, nil, nil)
 
 	for _, reg := range regs {
 		if reg.Handler == nil {
@@ -78,7 +78,7 @@ func Test_GetChannels_Valid(t *testing.T) {
 	r := resolve.New(md.Session, "guild-1")
 	filter := safety.NewFilter(nil, nil)
 
-	regs := channel.ChannelTools(md.Session, r, "test-guild-id", filter, nil)
+	regs := channel.ChannelTools(md.Session, r, "test-guild-id", filter, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_get_channels")
 
 	req := testutil.NewCallToolRequest("discord_get_channels", map[string]any{})
@@ -105,7 +105,7 @@ func Test_GetChannels_JSONFormat(t *testing.T) {
 	r := resolve.New(md.Session, "guild-1")
 	filter := safety.NewFilter(nil, nil)
 
-	regs := channel.ChannelTools(md.Session, r, "test-guild-id", filter, nil)
+	regs := channel.ChannelTools(md.Session, r, "test-guild-id", filter, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_get_channels")
 
 	req := testutil.NewCallToolRequest("discord_get_channels", map[string]any{})
@@ -133,7 +133,7 @@ func Test_Typing_Valid(t *testing.T) {
 	r := resolve.New(md.Session, "guild-1")
 	filter := safety.NewFilter(nil, nil)
 
-	regs := channel.ChannelTools(md.Session, r, "test-guild-id", filter, nil)
+	regs := channel.ChannelTools(md.Session, r, "test-guild-id", filter, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_typing")
 
 	req := testutil.NewCallToolRequest("discord_typing", map[string]any{
@@ -162,7 +162,7 @@ func Test_Typing_DeniedChannel(t *testing.T) {
 	}
 	filter := safety.NewFilter(nil, []string{"general"})
 
-	regs := channel.ChannelTools(md.Session, r, "test-guild-id", filter, nil)
+	regs := channel.ChannelTools(md.Session, r, "test-guild-id", filter, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_typing")
 
 	req := testutil.NewCallToolRequest("discord_typing", map[string]any{

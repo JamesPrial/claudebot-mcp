@@ -28,7 +28,7 @@ func Test_MessageTools_Registration(t *testing.T) {
 	filter := safety.NewFilter(nil, nil)
 	confirm := safety.NewConfirmationTracker([]string{"discord_delete_message"})
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
+	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
 
 	if len(regs) != 5 {
 		t.Fatalf("MessageTools() returned %d registrations, want 5", len(regs))
@@ -67,7 +67,7 @@ func Test_MessageTools_HandlersNotNil(t *testing.T) {
 	filter := safety.NewFilter(nil, nil)
 	confirm := safety.NewConfirmationTracker([]string{"discord_delete_message"})
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
+	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
 
 	for _, reg := range regs {
 		if reg.Handler == nil {
@@ -89,7 +89,7 @@ func Test_PollMessages_EmptyQueue_ShortTimeout(t *testing.T) {
 	filter := safety.NewFilter(nil, nil)
 	confirm := safety.NewConfirmationTracker(nil)
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
+	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_poll_messages")
 
 	req := testutil.NewCallToolRequest("discord_poll_messages", map[string]any{
@@ -130,7 +130,7 @@ func Test_PollMessages_QueueHasMessages(t *testing.T) {
 		Timestamp:      time.Now(),
 	})
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
+	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_poll_messages")
 
 	req := testutil.NewCallToolRequest("discord_poll_messages", map[string]any{
@@ -160,7 +160,7 @@ func Test_PollMessages_TimeoutClamping(t *testing.T) {
 	filter := safety.NewFilter(nil, nil)
 	confirm := safety.NewConfirmationTracker(nil)
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
+	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_poll_messages")
 
 	tests := []struct {
@@ -209,7 +209,7 @@ func Test_SendMessage_Valid(t *testing.T) {
 	filter := safety.NewFilter(nil, nil)
 	confirm := safety.NewConfirmationTracker(nil)
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
+	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_send_message")
 
 	req := testutil.NewCallToolRequest("discord_send_message", map[string]any{
@@ -241,7 +241,7 @@ func Test_SendMessage_DeniedChannel(t *testing.T) {
 	filter := safety.NewFilter(nil, []string{"general"})
 	confirm := safety.NewConfirmationTracker(nil)
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
+	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_send_message")
 
 	req := testutil.NewCallToolRequest("discord_send_message", map[string]any{
@@ -270,7 +270,7 @@ func Test_SendMessage_WithReplyTo(t *testing.T) {
 	filter := safety.NewFilter(nil, nil)
 	confirm := safety.NewConfirmationTracker(nil)
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
+	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_send_message")
 
 	req := testutil.NewCallToolRequest("discord_send_message", map[string]any{
@@ -304,7 +304,7 @@ func Test_GetMessages_Valid(t *testing.T) {
 	filter := safety.NewFilter(nil, nil)
 	confirm := safety.NewConfirmationTracker(nil)
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
+	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_get_messages")
 
 	req := testutil.NewCallToolRequest("discord_get_messages", map[string]any{
@@ -334,7 +334,7 @@ func Test_GetMessages_DeniedChannel(t *testing.T) {
 	filter := safety.NewFilter(nil, []string{"general"})
 	confirm := safety.NewConfirmationTracker(nil)
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
+	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_get_messages")
 
 	req := testutil.NewCallToolRequest("discord_get_messages", map[string]any{
@@ -366,7 +366,7 @@ func Test_EditMessage_Valid(t *testing.T) {
 	filter := safety.NewFilter(nil, nil)
 	confirm := safety.NewConfirmationTracker(nil)
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
+	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_edit_message")
 
 	req := testutil.NewCallToolRequest("discord_edit_message", map[string]any{
@@ -401,7 +401,7 @@ func Test_DeleteMessage_NoConfirmationToken(t *testing.T) {
 	filter := safety.NewFilter(nil, nil)
 	confirm := safety.NewConfirmationTracker([]string{"discord_delete_message"})
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
+	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_delete_message")
 
 	req := testutil.NewCallToolRequest("discord_delete_message", map[string]any{
@@ -433,7 +433,7 @@ func Test_DeleteMessage_WithValidConfirmationToken(t *testing.T) {
 	filter := safety.NewFilter(nil, nil)
 	confirm := safety.NewConfirmationTracker([]string{"discord_delete_message"})
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
+	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_delete_message")
 
 	// First call: get the confirmation token.
@@ -482,7 +482,7 @@ func Benchmark_PollMessages_EmptyQueue(b *testing.B) {
 	filter := safety.NewFilter(nil, nil)
 	confirm := safety.NewConfirmationTracker(nil)
 
-	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil)
+	regs := message.MessageTools(md.Session, q, r, filter, confirm, nil, nil)
 	handler := testutil.FindHandler(&testing.T{}, regs, "discord_poll_messages")
 
 	req := testutil.NewCallToolRequest("discord_poll_messages", map[string]any{

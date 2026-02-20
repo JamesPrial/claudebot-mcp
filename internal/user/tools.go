@@ -3,6 +3,7 @@ package user
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -25,13 +26,17 @@ type UserSummary struct {
 func UserTools(
 	dg *discordgo.Session,
 	audit *safety.AuditLogger,
+	logger *slog.Logger,
 ) []tools.Registration {
+	if logger == nil {
+		logger = slog.Default()
+	}
 	return []tools.Registration{
-		toolGetUser(dg, audit),
+		toolGetUser(dg, audit, logger),
 	}
 }
 
-func toolGetUser(dg *discordgo.Session, audit *safety.AuditLogger) tools.Registration {
+func toolGetUser(dg *discordgo.Session, audit *safety.AuditLogger, logger *slog.Logger) tools.Registration {
 	const toolName = "discord_get_user"
 
 	tool := mcp.NewTool(toolName,
@@ -46,6 +51,8 @@ func toolGetUser(dg *discordgo.Session, audit *safety.AuditLogger) tools.Registr
 		start := time.Now()
 		userID := req.GetString("user_id", "")
 		params := map[string]any{"user_id": userID}
+
+		logger.Debug("fetching user info", "userID", userID)
 
 		u, err := dg.User(userID)
 		if err != nil {

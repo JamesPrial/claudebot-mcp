@@ -2,7 +2,8 @@ package discord
 
 import (
 	"context"
-	"log"
+	"io"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -32,7 +33,7 @@ func newTestSession(t *testing.T, guildID string, filter *safety.Filter) (*Sessi
 	r := resolve.New(dg, guildID)
 
 	// Use a silent logger so tests don't spam stderr.
-	silent := log.New(log.Writer(), "", 0)
+	silent := slog.New(slog.NewTextHandler(io.Discard, nil))
 	s := newFromSessionFull(dg, q, r, filter, silent)
 
 	return s, q
@@ -60,7 +61,7 @@ func Test_NewFromSession_ReturnsNonNil(t *testing.T) {
 	q := queue.New()
 	r := resolve.New(dg, "guild-1")
 
-	s := NewFromSession(dg, q, r)
+	s := NewFromSession(dg, q, r, nil)
 	if s == nil {
 		t.Fatal("NewFromSession() returned nil")
 	}
@@ -77,7 +78,7 @@ func Test_NewFromSession_StoresComponents(t *testing.T) {
 	q := queue.New()
 	r := resolve.New(dg, "guild-1")
 
-	s := NewFromSession(dg, q, r)
+	s := NewFromSession(dg, q, r, nil)
 	if s == nil {
 		t.Fatal("NewFromSession() returned nil")
 	}
@@ -104,7 +105,7 @@ func Test_DiscordSession_ReturnsUnderlyingSession(t *testing.T) {
 	q := queue.New()
 	r := resolve.New(dg, "guild-1")
 
-	s := NewFromSession(dg, q, r)
+	s := NewFromSession(dg, q, r, nil)
 	if s == nil {
 		t.Fatal("NewFromSession() returned nil")
 	}
@@ -129,7 +130,7 @@ func Test_DiscordSession_TokenPreserved(t *testing.T) {
 	q := queue.New()
 	r := resolve.New(dg, "guild-1")
 
-	s := NewFromSession(dg, q, r)
+	s := NewFromSession(dg, q, r, nil)
 	underlying := s.DiscordSession()
 
 	// The token should be preserved through the wrapper.

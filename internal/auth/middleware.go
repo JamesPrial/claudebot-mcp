@@ -2,6 +2,7 @@
 package auth
 
 import (
+	"log/slog"
 	"net/http"
 	"strings"
 )
@@ -19,7 +20,13 @@ import (
 // space before the token value. Any deviation — missing header, wrong token,
 // lowercase prefix, extra spaces, or an empty token value — results in a 401
 // Unauthorized response and the next handler is never called.
-func NewAuthMiddleware(token string) func(http.Handler) http.Handler {
+//
+// logger is used to emit DEBUG-level messages on rejected requests. If nil,
+// slog.Default() is used.
+func NewAuthMiddleware(token string, logger *slog.Logger) func(http.Handler) http.Handler {
+	if logger == nil {
+		logger = slog.Default()
+	}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Auth disabled when no token is configured.
@@ -33,6 +40,7 @@ func NewAuthMiddleware(token string) func(http.Handler) http.Handler {
 			// Header must start with exactly "Bearer " (one space).
 			const prefix = "Bearer "
 			if !strings.HasPrefix(authHeader, prefix) {
+				logger.Debug("auth rejected: missing or malformed Authorization header", "remote", r.RemoteAddr)
 				http.Error(w, "unauthorized", http.StatusUnauthorized)
 				return
 			}
@@ -42,6 +50,7 @@ func NewAuthMiddleware(token string) func(http.Handler) http.Handler {
 
 			// The extracted portion must be non-empty and match exactly.
 			if provided == "" || provided != token {
+				logger.Debug("auth rejected: invalid token", "remote", r.RemoteAddr)
 				http.Error(w, "unauthorized", http.StatusUnauthorized)
 				return
 			}

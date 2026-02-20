@@ -24,7 +24,7 @@ func Test_ReactionTools_Registration(t *testing.T) {
 	r := resolve.New(md.Session, "guild-1")
 	filter := safety.NewFilter(nil, nil)
 
-	regs := reaction.ReactionTools(md.Session, r, filter, nil)
+	regs := reaction.ReactionTools(md.Session, r, filter, nil, nil)
 
 	if len(regs) != 2 {
 		t.Fatalf("ReactionTools() returned %d registrations, want 2", len(regs))
@@ -58,7 +58,7 @@ func Test_ReactionTools_HandlersNotNil(t *testing.T) {
 	r := resolve.New(md.Session, "guild-1")
 	filter := safety.NewFilter(nil, nil)
 
-	regs := reaction.ReactionTools(md.Session, r, filter, nil)
+	regs := reaction.ReactionTools(md.Session, r, filter, nil, nil)
 
 	for _, reg := range regs {
 		if reg.Handler == nil {
@@ -78,7 +78,7 @@ func Test_AddReaction_Valid(t *testing.T) {
 	r := resolve.New(md.Session, "guild-1")
 	filter := safety.NewFilter(nil, nil)
 
-	regs := reaction.ReactionTools(md.Session, r, filter, nil)
+	regs := reaction.ReactionTools(md.Session, r, filter, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_add_reaction")
 
 	req := testutil.NewCallToolRequest("discord_add_reaction", map[string]any{
@@ -110,7 +110,7 @@ func Test_AddReaction_DeniedChannel(t *testing.T) {
 	}
 	filter := safety.NewFilter(nil, []string{"general"})
 
-	regs := reaction.ReactionTools(md.Session, r, filter, nil)
+	regs := reaction.ReactionTools(md.Session, r, filter, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_add_reaction")
 
 	req := testutil.NewCallToolRequest("discord_add_reaction", map[string]any{
@@ -142,7 +142,7 @@ func Test_RemoveReaction_Valid(t *testing.T) {
 	r := resolve.New(md.Session, "guild-1")
 	filter := safety.NewFilter(nil, nil)
 
-	regs := reaction.ReactionTools(md.Session, r, filter, nil)
+	regs := reaction.ReactionTools(md.Session, r, filter, nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_remove_reaction")
 
 	req := testutil.NewCallToolRequest("discord_remove_reaction", map[string]any{

@@ -4,6 +4,7 @@ package reaction
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -20,14 +21,18 @@ func ReactionTools(
 	r *resolve.Resolver,
 	filter *safety.Filter,
 	audit *safety.AuditLogger,
+	logger *slog.Logger,
 ) []tools.Registration {
+	if logger == nil {
+		logger = slog.Default()
+	}
 	return []tools.Registration{
-		toolAddReaction(dg, r, filter, audit),
-		toolRemoveReaction(dg, r, filter, audit),
+		toolAddReaction(dg, r, filter, audit, logger),
+		toolRemoveReaction(dg, r, filter, audit, logger),
 	}
 }
 
-func toolAddReaction(dg *discordgo.Session, r *resolve.Resolver, filter *safety.Filter, audit *safety.AuditLogger) tools.Registration {
+func toolAddReaction(dg *discordgo.Session, r *resolve.Resolver, filter *safety.Filter, audit *safety.AuditLogger, logger *slog.Logger) tools.Registration {
 	const toolName = "discord_add_reaction"
 
 	tool := mcp.NewTool(toolName,
@@ -62,9 +67,11 @@ func toolAddReaction(dg *discordgo.Session, r *resolve.Resolver, filter *safety.
 			tools.LogAudit(audit, toolName, params, "error: "+err.Error(), start)
 			return tools.ErrorResult(err.Error()), nil
 		}
+		logger.Debug("resolved channel", "input", channel, "channelID", channelID)
 
 		channelName := r.ChannelName(channelID)
 		if filter != nil && !filter.IsAllowed(channelName) {
+			logger.Debug("channel access denied", "channel", channelName)
 			tools.LogAudit(audit, toolName, params, "denied", start)
 			return tools.ErrorResult(fmt.Sprintf("access to channel %q is not allowed", channelName)), nil
 		}
@@ -81,7 +88,7 @@ func toolAddReaction(dg *discordgo.Session, r *resolve.Resolver, filter *safety.
 	return tools.Registration{Tool: tool, Handler: server.ToolHandlerFunc(handler)}
 }
 
-func toolRemoveReaction(dg *discordgo.Session, r *resolve.Resolver, filter *safety.Filter, audit *safety.AuditLogger) tools.Registration {
+func toolRemoveReaction(dg *discordgo.Session, r *resolve.Resolver, filter *safety.Filter, audit *safety.AuditLogger, logger *slog.Logger) tools.Registration {
 	const toolName = "discord_remove_reaction"
 
 	tool := mcp.NewTool(toolName,
@@ -116,9 +123,11 @@ func toolRemoveReaction(dg *discordgo.Session, r *resolve.Resolver, filter *safe
 			tools.LogAudit(audit, toolName, params, "error: "+err.Error(), start)
 			return tools.ErrorResult(err.Error()), nil
 		}
+		logger.Debug("resolved channel", "input", channel, "channelID", channelID)
 
 		channelName := r.ChannelName(channelID)
 		if filter != nil && !filter.IsAllowed(channelName) {
+			logger.Debug("channel access denied", "channel", channelName)
 			tools.LogAudit(audit, toolName, params, "denied", start)
 			return tools.ErrorResult(fmt.Sprintf("access to channel %q is not allowed", channelName)), nil
 		}

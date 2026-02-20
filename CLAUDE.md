@@ -66,6 +66,7 @@ Config loads from `CLAUDEBOT_CONFIG_PATH` (default `config.yaml`), then env var 
 - `CLAUDEBOT_DISCORD_TOKEN` → Discord bot token (required)
 - `CLAUDEBOT_DISCORD_GUILD_ID` → Target guild (required)
 - `CLAUDEBOT_AUTH_TOKEN` → Bearer auth token (optional)
+- `CLAUDEBOT_LOG_LEVEL` → Log level: debug, info, warn, error (default: info)
 
 See `config.example.yaml` for full schema.
 
@@ -77,6 +78,9 @@ See `config.example.yaml` for full schema.
 - All-digit channel params treated as IDs; otherwise resolved as names via `resolve.ResolveChannelParam()`
 - Destructive operations (e.g., `discord_delete_message`) require confirmation tokens
 - Tests use `t.Parallel()` throughout
+- Application logging uses `log/slog` (Go stdlib); audit logging is separate NDJSON via `safety.AuditLogger`
+- Log levels: ERROR (fatal/unrecoverable), WARN (degraded/recoverable), INFO (operational milestones), DEBUG (detailed tracing)
+- `*slog.Logger` is injected into all components; pass `nil` in tests to use `slog.Default()`
 
 ## CI/CD
 

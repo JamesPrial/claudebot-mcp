@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log/slog"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -346,5 +347,114 @@ func Test_ApplyEnvOverrides_AllThreeSet(t *testing.T) {
 	}
 	if cfg.Server.AuthToken != "auth1" {
 		t.Errorf("Server.AuthToken = %q, want %q", cfg.Server.AuthToken, "auth1")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// ParseLogLevel
+// ---------------------------------------------------------------------------
+
+func Test_ParseLogLevel_Cases(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		input string
+		want  slog.Level
+	}{
+		{
+			name:  "debug lowercase",
+			input: "debug",
+			want:  slog.LevelDebug,
+		},
+		{
+			name:  "info lowercase",
+			input: "info",
+			want:  slog.LevelInfo,
+		},
+		{
+			name:  "warn lowercase",
+			input: "warn",
+			want:  slog.LevelWarn,
+		},
+		{
+			name:  "warning lowercase",
+			input: "warning",
+			want:  slog.LevelWarn,
+		},
+		{
+			name:  "error lowercase",
+			input: "error",
+			want:  slog.LevelError,
+		},
+		{
+			name:  "INFO uppercase is case insensitive",
+			input: "INFO",
+			want:  slog.LevelInfo,
+		},
+		{
+			name:  "DEBUG uppercase is case insensitive",
+			input: "DEBUG",
+			want:  slog.LevelDebug,
+		},
+		{
+			name:  "empty string defaults to info",
+			input: "",
+			want:  slog.LevelInfo,
+		},
+		{
+			name:  "unknown string defaults to info",
+			input: "garbage",
+			want:  slog.LevelInfo,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := ParseLogLevel(tt.input)
+			if got != tt.want {
+				t.Errorf("ParseLogLevel(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+// ---------------------------------------------------------------------------
+// ApplyEnvOverrides — CLAUDEBOT_LOG_LEVEL
+// ---------------------------------------------------------------------------
+
+func Test_ApplyEnvOverrides_LogLevel(t *testing.T) {
+	tests := []struct {
+		name      string
+		envValue  string
+		initial   string
+		wantLevel string
+	}{
+		{
+			name:      "CLAUDEBOT_LOG_LEVEL overrides to debug",
+			envValue:  "debug",
+			initial:   "info",
+			wantLevel: "debug",
+		},
+		{
+			name:      "empty CLAUDEBOT_LOG_LEVEL does not override existing value",
+			envValue:  "",
+			initial:   "warn",
+			wantLevel: "warn",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("CLAUDEBOT_LOG_LEVEL", tt.envValue)
+
+			cfg := Config{Logging: LoggingConfig{Level: tt.initial}}
+			ApplyEnvOverrides(&cfg)
+
+			if cfg.Logging.Level != tt.wantLevel {
+				t.Errorf("Logging.Level = %q, want %q", cfg.Logging.Level, tt.wantLevel)
+			}
+		})
 	}
 }

@@ -19,7 +19,7 @@ func Test_GuildTools_Registration(t *testing.T) {
 	md := testutil.NewMockDiscordSession(t)
 	t.Cleanup(md.Close)
 
-	regs := guild.GuildTools(md.Session, "test-guild-id", nil)
+	regs := guild.GuildTools(md.Session, "test-guild-id", nil, nil)
 
 	if len(regs) != 1 {
 		t.Fatalf("GuildTools() returned %d registrations, want 1", len(regs))
@@ -34,7 +34,7 @@ func Test_GuildTools_HandlerNotNil(t *testing.T) {
 	md := testutil.NewMockDiscordSession(t)
 	t.Cleanup(md.Close)
 
-	regs := guild.GuildTools(md.Session, "test-guild-id", nil)
+	regs := guild.GuildTools(md.Session, "test-guild-id", nil, nil)
 
 	for _, reg := range regs {
 		if reg.Handler == nil {
@@ -51,7 +51,7 @@ func Test_GetGuild_Valid(t *testing.T) {
 	md := testutil.NewMockDiscordSession(t)
 	t.Cleanup(md.Close)
 
-	regs := guild.GuildTools(md.Session, "guild-1", nil)
+	regs := guild.GuildTools(md.Session, "guild-1", nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_get_guild")
 
 	req := testutil.NewCallToolRequest("discord_get_guild", map[string]any{})
@@ -75,7 +75,7 @@ func Test_GetGuild_JSONFormat(t *testing.T) {
 	md := testutil.NewMockDiscordSession(t)
 	t.Cleanup(md.Close)
 
-	regs := guild.GuildTools(md.Session, "test-guild-id", nil)
+	regs := guild.GuildTools(md.Session, "test-guild-id", nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_get_guild")
 
 	req := testutil.NewCallToolRequest("discord_get_guild", map[string]any{})
@@ -96,7 +96,7 @@ func Test_GetGuild_ContainsMemberCount(t *testing.T) {
 	md := testutil.NewMockDiscordSession(t)
 	t.Cleanup(md.Close)
 
-	regs := guild.GuildTools(md.Session, "test-guild-id", nil)
+	regs := guild.GuildTools(md.Session, "test-guild-id", nil, nil)
 	handler := testutil.FindHandler(t, regs, "discord_get_guild")
 
 	req := testutil.NewCallToolRequest("discord_get_guild", map[string]any{})

@@ -4,6 +4,7 @@ package message
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -37,17 +38,21 @@ func MessageTools(
 	filter *safety.Filter,
 	confirm *safety.ConfirmationTracker,
 	audit *safety.AuditLogger,
+	logger *slog.Logger,
 ) []tools.Registration {
+	if logger == nil {
+		logger = slog.Default()
+	}
 	return []tools.Registration{
-		toolPollMessages(dg, q, r, filter, audit),
-		toolSendMessage(dg, r, filter, audit),
-		toolGetMessages(dg, r, filter, audit),
-		toolEditMessage(dg, r, filter, audit),
-		toolDeleteMessage(dg, r, filter, confirm, audit),
+		toolPollMessages(dg, q, r, filter, audit, logger),
+		toolSendMessage(dg, r, filter, audit, logger),
+		toolGetMessages(dg, r, filter, audit, logger),
+		toolEditMessage(dg, r, filter, audit, logger),
+		toolDeleteMessage(dg, r, filter, confirm, audit, logger),
 	}
 }
 
-func toolPollMessages(dg *discordgo.Session, q *queue.Queue, r *resolve.Resolver, filter *safety.Filter, audit *safety.AuditLogger) tools.Registration {
+func toolPollMessages(dg *discordgo.Session, q *queue.Queue, r *resolve.Resolver, filter *safety.Filter, audit *safety.AuditLogger, logger *slog.Logger) tools.Registration {
 	const toolName = "discord_poll_messages"
 
 	tool := mcp.NewTool(toolName,
@@ -95,6 +100,7 @@ func toolPollMessages(dg *discordgo.Session, q *queue.Queue, r *resolve.Resolver
 				return tools.ErrorResult(err.Error()), nil
 			}
 			channelFilter = resolved
+			logger.Debug("resolved channel", "input", channel, "channelID", channelFilter)
 		}
 
 		msgs := q.Poll(ctx, time.Duration(timeoutSec)*time.Second, limit, channelFilter)
@@ -110,7 +116,7 @@ func toolPollMessages(dg *discordgo.Session, q *queue.Queue, r *resolve.Resolver
 	return tools.Registration{Tool: tool, Handler: server.ToolHandlerFunc(handler)}
 }
 
-func toolSendMessage(dg *discordgo.Session, r *resolve.Resolver, filter *safety.Filter, audit *safety.AuditLogger) tools.Registration {
+func toolSendMessage(dg *discordgo.Session, r *resolve.Resolver, filter *safety.Filter, audit *safety.AuditLogger, logger *slog.Logger) tools.Registration {
 	const toolName = "discord_send_message"
 
 	tool := mcp.NewTool(toolName,
@@ -144,9 +150,11 @@ func toolSendMessage(dg *discordgo.Session, r *resolve.Resolver, filter *safety.
 			tools.LogAudit(audit, toolName, params, "error: "+err.Error(), start)
 			return tools.ErrorResult(err.Error()), nil
 		}
+		logger.Debug("resolved channel", "input", channel, "channelID", channelID)
 
 		channelName := r.ChannelName(channelID)
 		if filter != nil && !filter.IsAllowed(channelName) {
+			logger.Debug("channel access denied", "channel", channelName)
 			tools.LogAudit(audit, toolName, params, "denied", start)
 			return tools.ErrorResult(fmt.Sprintf("access to channel %q is not allowed", channelName)), nil
 		}
@@ -171,7 +179,7 @@ func toolSendMessage(dg *discordgo.Session, r *resolve.Resolver, filter *safety.
 	return tools.Registration{Tool: tool, Handler: server.ToolHandlerFunc(handler)}
 }
 
-func toolGetMessages(dg *discordgo.Session, r *resolve.Resolver, filter *safety.Filter, audit *safety.AuditLogger) tools.Registration {
+func toolGetMessages(dg *discordgo.Session, r *resolve.Resolver, filter *safety.Filter, audit *safety.AuditLogger, logger *slog.Logger) tools.Registration {
 	const toolName = "discord_get_messages"
 
 	tool := mcp.NewTool(toolName,
@@ -212,9 +220,11 @@ func toolGetMessages(dg *discordgo.Session, r *resolve.Resolver, filter *safety.
 			tools.LogAudit(audit, toolName, params, "error: "+err.Error(), start)
 			return tools.ErrorResult(err.Error()), nil
 		}
+		logger.Debug("resolved channel", "input", channel, "channelID", channelID)
 
 		channelName := r.ChannelName(channelID)
 		if filter != nil && !filter.IsAllowed(channelName) {
+			logger.Debug("channel access denied", "channel", channelName)
 			tools.LogAudit(audit, toolName, params, "denied", start)
 			return tools.ErrorResult(fmt.Sprintf("access to channel %q is not allowed", channelName)), nil
 		}
@@ -249,7 +259,7 @@ func toolGetMessages(dg *discordgo.Session, r *resolve.Resolver, filter *safety.
 	return tools.Registration{Tool: tool, Handler: server.ToolHandlerFunc(handler)}
 }
 
-func toolEditMessage(dg *discordgo.Session, r *resolve.Resolver, filter *safety.Filter, audit *safety.AuditLogger) tools.Registration {
+func toolEditMessage(dg *discordgo.Session, r *resolve.Resolver, filter *safety.Filter, audit *safety.AuditLogger, logger *slog.Logger) tools.Registration {
 	const toolName = "discord_edit_message"
 
 	tool := mcp.NewTool(toolName,
@@ -284,9 +294,11 @@ func toolEditMessage(dg *discordgo.Session, r *resolve.Resolver, filter *safety.
 			tools.LogAudit(audit, toolName, params, "error: "+err.Error(), start)
 			return tools.ErrorResult(err.Error()), nil
 		}
+		logger.Debug("resolved channel", "input", channel, "channelID", channelID)
 
 		channelName := r.ChannelName(channelID)
 		if filter != nil && !filter.IsAllowed(channelName) {
+			logger.Debug("channel access denied", "channel", channelName)
 			tools.LogAudit(audit, toolName, params, "denied", start)
 			return tools.ErrorResult(fmt.Sprintf("access to channel %q is not allowed", channelName)), nil
 		}
@@ -303,7 +315,7 @@ func toolEditMessage(dg *discordgo.Session, r *resolve.Resolver, filter *safety.
 	return tools.Registration{Tool: tool, Handler: server.ToolHandlerFunc(handler)}
 }
 
-func toolDeleteMessage(dg *discordgo.Session, r *resolve.Resolver, filter *safety.Filter, confirm *safety.ConfirmationTracker, audit *safety.AuditLogger) tools.Registration {
+func toolDeleteMessage(dg *discordgo.Session, r *resolve.Resolver, filter *safety.Filter, confirm *safety.ConfirmationTracker, audit *safety.AuditLogger, logger *slog.Logger) tools.Registration {
 	const toolName = "discord_delete_message"
 
 	tool := mcp.NewTool(toolName,
@@ -336,14 +348,17 @@ func toolDeleteMessage(dg *discordgo.Session, r *resolve.Resolver, filter *safet
 			tools.LogAudit(audit, toolName, params, "error: "+err.Error(), start)
 			return tools.ErrorResult(err.Error()), nil
 		}
+		logger.Debug("resolved channel", "input", channel, "channelID", channelID)
 
 		channelName := r.ChannelName(channelID)
 		if filter != nil && !filter.IsAllowed(channelName) {
+			logger.Debug("channel access denied", "channel", channelName)
 			tools.LogAudit(audit, toolName, params, "denied", start)
 			return tools.ErrorResult(fmt.Sprintf("access to channel %q is not allowed", channelName)), nil
 		}
 
 		if !confirm.Confirm(token) {
+			logger.Debug("confirmation required", "tool", toolName)
 			desc := fmt.Sprintf("This will permanently delete message %q from channel %q.", messageID, channelName)
 			return tools.ConfirmPrompt(confirm, toolName, messageID, desc), nil
 		}

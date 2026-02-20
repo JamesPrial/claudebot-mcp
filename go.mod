@@ -3,7 +3,7 @@ module github.com/jamesprial/claudebot-mcp
 go 1.24.0
 
 require (
-	github.com/bwmarrin/discordgo v0.29.0
+	github.com/bwmarrin/discordgo v0.29.1-0.20251229154532-54ae40de5723
 	github.com/mark3labs/mcp-go v0.44.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -18,6 +18,4 @@ require (
 	github.com/spf13/cast v1.7.1 // indirect
 	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
-	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b // indirect
-	golang.org/x/sys v0.0.0-20201119102817-f84b799fce68 // indirect
 )
